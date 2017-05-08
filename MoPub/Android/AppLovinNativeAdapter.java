@@ -131,18 +131,26 @@ public class AppLovinNativeAdapter extends CustomEventNative {
          * use the code below if you would like AppLovin to handle the ad clicks for you:
          *
 
-        @Override
         public void prepare(View view) {
 
-            mView = view;
-            mView.setOnClickListener(new View.OnClickListener() {
+            Log.i(TAG, "prepare is called.");
 
+            View.OnClickListener clickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    Log.i(TAG, "onClick is called.");
+
                     mNativeAd.launchClickTarget(mContext);
+
                     notifyAdClicked();
                 }
-            });
+            };
+
+            mView = view;
+            mView.setOnClickListener(clickListener);
+            
+            // If you need to make subviews of the view clickable (e.g. CTA button), apply the click listener to them:
+            mView.findViewById(R.id.ID_OF_SUBVIEW).setOnClickListener(clickListener);
 
             trackImpression(mNativeAd);
 
