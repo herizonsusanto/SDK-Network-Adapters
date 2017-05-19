@@ -36,8 +36,8 @@ public class AppLovinBannerAdapter
     @Override
     protected void loadBanner(final Context context, final CustomEventBannerListener customEventBannerListener, final Map<String, Object> localExtras, final Map<String, String> serverExtras)
     {
-        // Input check
-        if ( !( context instanceof Activity ) )
+        // SDK versions BELOW 7.1.0 require a instance of an Activity to be passed in as the context
+        if ( AppLovinSdk.VERSION_CODE < 710 && !( context instanceof Activity ) )
         {
             Log.e( TAG, "Unable to request AppLovin banner. Invalid context provided." );
             customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
