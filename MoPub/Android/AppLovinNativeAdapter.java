@@ -101,18 +101,16 @@ public class AppLovinNativeAdapter extends CustomEventNative {
 
 
         private void trackImpression(final AppLovinNativeAd nativeAd) {
-
+            
             if (isImpressionTracked) return;
-
-            final AppLovinSdk sdk = AppLovinSdk.getInstance(mContext);
-            final String impressionUrl = nativeAd.getImpressionTrackingUrl();
-            sdk.getPostbackService().dispatchPostbackAsync(impressionUrl, new AppLovinPostbackListener() {
+            
+            nativeAd.trackImpression( new AppLovinPostbackListener() {
                 @Override
                 public void onPostbackSuccess(String url) {
                     notifyAdImpressed();
                     isImpressionTracked = true;
                 }
-
+                
                 @Override
                 public void onPostbackFailure(String url, int errorCode) {
                     Log.d(TAG, "Failed to track impression.");
