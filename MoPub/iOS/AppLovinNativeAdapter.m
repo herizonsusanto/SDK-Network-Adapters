@@ -14,11 +14,10 @@
 
 @implementation AppLovinNativeAdapter
 
-- (id)initWithALNativeAd:(ALNativeAd *)ad {
-    
+- (id)initWithALNativeAd:(ALNativeAd *)ad
+{
     self.nativeAd = ad;
     NSMutableDictionary *props = [NSMutableDictionary dictionary];
-
     
     [props setValue:ad.title                        forKey:kAdTitleKey];
     [props setValue:ad.descriptionText              forKey:kAdTextKey];
@@ -28,30 +27,28 @@
     [props setValue:ad.ctaText                      forKey:kAdCTATextKey];
 
     self.properties = props;
-
     
     return self;
 }
 
-- (void)displayContentForURL:(NSURL *)URL rootViewController:(UIViewController *)controller {
+- (void)displayContentForURL:(NSURL *)URL rootViewController:(UIViewController *)controller
+{
     [self.nativeAd launchClickTarget];
 }
 
 - (void)willAttachToView:(UIView *)view
 {
-    ALSdk* sdk = [ALSdk shared];
-    [sdk.postbackService dispatchPostbackAsync: self.nativeAd.impressionTrackingURL andNotify: self];
+    [self.nativeAd trackImpressionAndNotify: self];
 }
 
-
--(void) postbackService:(alnonnull ALPostbackService *)postbackService didExecutePostback:(alnonnull NSURL *)postbackURL
+- (void)postbackService:(alnonnull ALPostbackService *)postbackService didExecutePostback:(alnonnull NSURL *)postbackURL
 {
     
 }
 
-- (void) postbackService: (alnonnull ALPostbackService *) postbackService didFailToExecutePostback: (alnullable NSURL *) postbackURL errorCode: (NSInteger) errorCode
+- (void)postbackService:(alnonnull ALPostbackService *)postbackService didFailToExecutePostback:(alnullable NSURL *)postbackURL errorCode:(NSInteger)errorCode
 {
-    [AppLovinNativeCustomEvent ALLog:@"Failed to execute impression postback."];
+    [AppLovinNativeCustomEvent ALLog: @"Failed to execute impression postback."];
 }
 
 @end
