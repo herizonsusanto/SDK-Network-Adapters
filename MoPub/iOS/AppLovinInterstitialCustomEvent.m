@@ -1,102 +1,136 @@
 //
-// AppLovin <--> MoPub Network Adaptors
+//  AppLovinInterstitialCustomEvent.m
+//
+//
+//  Created by Thomas So on 5/21/17.
+//
 //
 
-#if !__has_feature(objc_arc)
-#error This file must be compiled with ARC. Use the -fobjc-arc flag in the XCode build phases tab.
+#if __has_include(<AppLovinSDK/AppLovinSDK.h>)
+    #import <AppLovinSDK/AppLovinSDK.h>
+#else
+    #import "ALInterstitialAd.h"
 #endif
 
 #import "AppLovinInterstitialCustomEvent.h"
 
+@interface AppLovinInterstitialCustomEvent()<ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
+
+@property (nonatomic, strong) ALInterstitialAd *interstitialAd;
+@property (nonatomic, strong) ALAd *loadedAd;
+
+@end
+
 @implementation AppLovinInterstitialCustomEvent
 
-static NSString* const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
+static const BOOL kALLoggingEnabled = YES;
+static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
+
+#pragma mark - MPInterstitialCustomEvent Overridden Methods
 
 - (void)requestInterstitialWithCustomEventInfo:(NSDictionary *)info
 {
-    ALAdService * adService = [[ALSdk shared] adService];
+    [self log: @"Requesting AppLovin interstitial with info: %@", info];
+    
+    [[ALSdk shared] setPluginVersion: @"MoPubInterstitial-1.0"];
+    
+    ALAdService *adService = [ALSdk shared].adService;
     [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
 }
 
 - (void)showInterstitialFromRootViewController:(UIViewController *)rootViewController
 {
-    if (self.loadedAd)
+    if ( self.loadedAd )
     {
-        UIWindow * window = rootViewController.view.window;
-        
-        UIInterfaceOrientation currentOrientation = [[UIApplication sharedApplication] statusBarOrientation];
-        
-        CGRect localFrame;
-        
-        if(currentOrientation == UIDeviceOrientationPortrait || currentOrientation == UIDeviceOrientationPortraitUpsideDown)
-        {
-            localFrame = CGRectMake(0, 0, window.frame.size.width, window.frame.size.height - [UIApplication sharedApplication].statusBarFrame.size.height);
-        }
-        else // Landscape
-        {
-            localFrame = CGRectMake(0, 0, window.frame.size.width - [UIApplication sharedApplication].statusBarFrame.size.width, window.frame.size.height);
-        }
-        
         self.interstitialAd = [[ALInterstitialAd alloc] initWithSdk: [ALSdk shared]];
         self.interstitialAd.adDisplayDelegate = self;
-        self.interstitialAd.frame = localFrame;
-        [self.interstitialAd showOver:window andRender: self.loadedAd];
+        self.interstitialAd.adVideoPlaybackDelegate = self;
+        [self.interstitialAd showOver: rootViewController.view.window andRender: self.loadedAd];
     }
     else
     {
-        NSError* error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
-                                             code: -1
-                                         userInfo: @{
-                                                     NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display an interstitial before one was loaded."
-                                                     }
-                          ];
+        [self log: @"Failed to show an AppLovin interstitial before one was loaded."];
+        
+        NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                             code: kALErrorCodeUnableToRenderAd
+                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display an interstitial before one was loaded."}];
         
         [self.delegate interstitialCustomEvent: self didFailToLoadAdWithError: error];
     }
 }
 
-#pragma mark - ALAdLoadDelegate methods
--(void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
+#pragma mark - Ad Load Delegate
+
+- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
+    [self log: @"Interstitial did load ad: %@", ad.adIdNumber];
+    
     self.loadedAd = ad;
+    
     [self.delegate interstitialCustomEvent: self didLoadAd: ad];
 }
 
--(void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
+- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
 {
-    NSError* error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
-                                         code: code
-                                     userInfo: nil];
+    [self log: @"Interstitial failed to load with error: %d", code];
     
+    // TODO: Translate between AppLovin <-> MoPub error codes
+    
+    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain code: code userInfo: nil];
     [self.delegate interstitialCustomEvent: self didFailToLoadAdWithError: error];
 }
 
+#pragma mark - Ad Display Delegate
 
-#pragma mark - ALAdDisplayDelegate methods
--(void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
+- (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
 {
-    [self.delegate interstitialCustomEventWillDisappear: self];
-    [self.delegate interstitialCustomEventDidDisappear: self];
-}
-
-
--(void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
-{
+    [self log: @"Interstitial displayed"];
+    
     [self.delegate interstitialCustomEventWillAppear: self];
     [self.delegate interstitialCustomEventDidAppear: self];
 }
 
--(void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
+- (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
 {
+    [self log: @"Interstitial dismissed"];
+    
+    [self.delegate interstitialCustomEventWillDisappear: self];
+    [self.delegate interstitialCustomEventDidDisappear: self];
+}
+
+- (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
+{
+    [self log: @"Interstitial clicked"];
+    
     [self.delegate interstitialCustomEventDidReceiveTapEvent: self];
     [self.delegate interstitialCustomEventWillLeaveApplication: self];
 }
 
-- (void)dealloc
+#pragma mark - Video Playback Delegate
+
+- (void)videoPlaybackBeganInAd:(ALAd *)ad
 {
-    self.loadedAd = nil;
-    self.interstitialAd = nil;
-    self.interstitialAd.adDisplayDelegate = nil;
+    [self log: @"Interstitial video playback began"];
+}
+
+- (void)videoPlaybackEndedInAd:(ALAd *)ad atPlaybackPercent:(NSNumber *)percentPlayed fullyWatched:(BOOL)wasFullyWatched
+{
+    [self log: @"Interstitial video playback ended at playback percent: %lu", percentPlayed.unsignedIntegerValue];
+}
+
+#pragma mark - Utility Methods
+
+- (void)log:(NSString *)format, ...
+{
+    if ( kALLoggingEnabled )
+    {
+        va_list valist;
+        va_start(valist, format);
+        NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
+        va_end(valist);
+        
+        NSLog(@"AppLovinInterstitialCustomEvent: %@", message);
+    }
 }
 
 @end

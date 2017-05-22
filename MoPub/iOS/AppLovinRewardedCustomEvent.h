@@ -1,19 +1,13 @@
 //
-// AppLovin <--> MoPub Network Adaptors
+//  AppLovinRewardedCustomEvent.h
 //
-
-#if __has_include(<AppLovinSDK/AppLovinSDK.h>)
-    #import <AppLovinSDK/AppLovinSDK.h>
-#else
-    #import "ALAdLoadDelegate.h"
-    #import "ALAdDisplayDelegate.h"
-    #import "ALAdRewardDelegate.h"
-    #import "ALAdVideoPlaybackDelegate.h"
-    #import "ALIncentivizedInterstitialAd.h"
-#endif
+//
+//  Created by Thomas So on 5/21/17.
+//
+//
 
 #import "MPRewardedVideoCustomEvent.h"
 
-@interface AppLovinRewardedCustomEvent : MPRewardedVideoCustomEvent <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdRewardDelegate, ALAdVideoPlaybackDelegate>
+@interface AppLovinRewardedCustomEvent : MPRewardedVideoCustomEvent
 
 @end

@@ -1,159 +1,179 @@
 //
-// AppLovin <--> MoPub Network Adaptors
+//  AppLovinRewardedCustomEvent.m
+//
+//
+//  Created by Thomas So on 5/21/17.
+//
 //
 
-#if !__has_feature(objc_arc)
-#error This file must be compiled with ARC. Use the -fobjc-arc flag in the XCode build phases tab.
+#if __has_include(<AppLovinSDK/AppLovinSDK.h>)
+    #import <AppLovinSDK/AppLovinSDK.h>
+#else
+    #import "ALIncentivizedInterstitialAd.h"
 #endif
 
 #import "AppLovinRewardedCustomEvent.h"
 #import "MPRewardedVideoReward.h"
 
-static NSString *const kALMoPubMediationErrorDomain =
-    @"com.applovin.sdk.mediation.mopub.errorDomain";
-static BOOL loggingEnabled = YES;
-
-@interface AppLovinRewardedCustomEvent ()
-@property(nonatomic, strong) ALIncentivizedInterstitialAd *incent;
-@property(atomic, assign) BOOL adReady;
+@interface AppLovinRewardedCustomEvent()<ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
+@property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
 @end
 
 @implementation AppLovinRewardedCustomEvent
 
-- (void)requestRewardedVideoWithCustomEventInfo:(NSDictionary *)info {
-  NSLog(@"MoPub adapter requesting rewarded video.");
+static const BOOL kALLoggingEnabled = YES;
+static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
-  self.incent =
-      [[ALIncentivizedInterstitialAd alloc] initWithSdk:[ALSdk shared]];
-  self.incent.adVideoPlaybackDelegate = self;
-  self.incent.adDisplayDelegate = self;
+#pragma mark - MPRewardedVideoCustomEvent Overridden Methods
 
-  if (!self.adReady) {
-    [self.incent preloadAndNotify:self];
-  }
+- (void)requestRewardedVideoWithCustomEventInfo:(NSDictionary *)info
+{
+    [self log: @"Requesting AppLovin rewarded video with info: %@", info];
+    
+    [[ALSdk shared] setPluginVersion: @"MoPubRewardedVideo-1.0"];
+    
+    if ( !self.incent )
+    {
+        self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+        self.incent.adVideoPlaybackDelegate = self;
+        self.incent.adDisplayDelegate = self;
+    }
+    
+    if ( ![self hasAdAvailable] )
+    {
+        [self.incent preloadAndNotify:self];
+    }
 }
 
-- (BOOL)hasAdAvailable {
-  return self.adReady;
+- (BOOL)hasAdAvailable
+{
+    return self.incent.readyForDisplay;
 }
 
-- (void)presentRewardedVideoFromViewController:
-    (UIViewController *)viewController {
-  [self ALLog:@"MoPub adapter showing rewarded video."];
-  if (self.adReady) {
-    [self.incent showAndNotify:self];
-  } else {
-    NSError *error =
-        [NSError errorWithDomain:kALMoPubMediationErrorDomain
-                            code:-1
-                        userInfo:@{
-                          NSLocalizedFailureReasonErrorKey :
-                              @"Adaptor requested to display a rewarded video "
-                              @"before one was loaded."
-                        }];
-
-    [self.delegate rewardedVideoDidFailToPlayForCustomEvent:self error:error];
-  }
+- (void)presentRewardedVideoFromViewController:(UIViewController *)viewController
+{
+    if ( [self hasAdAvailable] )
+    {
+        [self.incent showAndNotify:self];
+    }
+    else
+    {
+        [self log: @"Failed to show an AppLovin rewarded video before one was loaded."];
+        
+        NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                             code: kALErrorCodeUnableToRenderAd
+                                        userInfo :@{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded."}];
+        
+        [self.delegate rewardedVideoDidFailToPlayForCustomEvent: self error: error];
+    }
 }
 
-- (void)handleCustomEventInvalidated {
+- (void)handleCustomEventInvalidated { }
+- (void)handleAdPlayedForCustomEventNetwork { }
+
+#pragma mark - Ad Load Delegate
+
+- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
+{
+    [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
+    
+    [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
 }
 
-- (void) handleAdPlayedForCustomEventNetwork {
-	//	This method has to be implemented as its part of the MPRewardedVideoCustomEvent interface
-	//	Otherwise an exception is thrown and app crashes:
-	//		-[AppLovinRewardedCustomEvent handleAdPlayedForCustomEventNetwork]: unrecognized selector sent to instance 0xxxxxxx
+- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
+{
+    [self log: @"Rewarded video failed to load with error: %d", code];
+    
+    // TODO: Translate between AppLovin <-> MoPub error codes
+    
+    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain code: code userInfo: nil];
+    [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent: self error: error];
 }
 
-#pragma mark ALAdLoadDelegate methods
+#pragma mark - Ad Display Delegate
 
-- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code {
-  [self ALLog:@"Rewarded video failed to load."];
-  NSError *error = [NSError errorWithDomain:kALMoPubMediationErrorDomain
-                                       code:code
-                                   userInfo:nil];
-
-  [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent:self error:error];
+- (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
+{
+    [self log: @"Rewarded video displayed"];
+    
+    [self.delegate rewardedVideoWillAppearForCustomEvent: self];
+    [self.delegate rewardedVideoDidAppearForCustomEvent: self];
 }
 
-- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad {
-  [self ALLog:@"Rewarded video was loaded."];
-  [self.delegate rewardedVideoDidLoadAdForCustomEvent:self];
-  self.adReady = YES;
+- (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
+{
+    [self log: @"Rewarded video dismissed"];
+    
+    [self.delegate rewardedVideoWillDisappearForCustomEvent: self];
+    [self.delegate rewardedVideoDidDisappearForCustomEvent: self];
 }
 
-#pragma mark ALAdDisplayDelegate methods
-
-- (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view {
-  [self ALLog:@"Rewarded video was clicked."];
-  [self.delegate rewardedVideoDidReceiveTapEventForCustomEvent:self];
-  [self.delegate rewardedVideoWillLeaveApplicationForCustomEvent:self];
+- (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
+{
+    [self log: @"Rewarded video clicked"];
+    
+    [self.delegate rewardedVideoDidReceiveTapEventForCustomEvent: self];
+    [self.delegate rewardedVideoWillLeaveApplicationForCustomEvent: self];
 }
 
-- (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view {
-  [self ALLog:@"Rewarded video was displayed."];
-  [self.delegate rewardedVideoWillAppearForCustomEvent:self];
-  [self.delegate rewardedVideoDidAppearForCustomEvent:self];
+#pragma mark - Video Playback Delegate
+
+- (void)videoPlaybackBeganInAd:(ALAd *)ad
+{
+    [self log: @"Rewarded video video playback began"];
 }
 
-- (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view {
-  [self ALLog:@"Rewarded video was closed."];
-  [self.delegate rewardedVideoWillDisappearForCustomEvent:self];
-  [self.delegate rewardedVideoDidDisappearForCustomEvent:self];
+- (void)videoPlaybackEndedInAd:(ALAd *)ad atPlaybackPercent:(NSNumber *)percentPlayed fullyWatched:(BOOL)wasFullyWatched
+{
+    [self log: @"Rewarded video video playback ended at playback percent: %lu", percentPlayed.unsignedIntegerValue];
 }
 
-#pragma mark - ALAdVideoPlaybackDelegate methods
+#pragma mark - Reward Delegate
 
-- (void)videoPlaybackBeganInAd:(ALAd *)ad {
-  [self ALLog:@"Rewarded video playback began"];
-  self.adReady = NO;
+- (void)rewardValidationRequestForAd:(ALAd *)ad didExceedQuotaWithResponse:(NSDictionary *)response
+{
+    [self log: @"Rewarded video validation request for ad did exceed quota with response: %@", response];
 }
 
-- (void)videoPlaybackEndedInAd:(ALAd *)ad
-             atPlaybackPercent:(NSNumber *)percentPlayed
-                  fullyWatched:(BOOL)wasFullyWatched {
-  [self ALLog:@"Rewarded video playback ended."];
+- (void)rewardValidationRequestForAd:(ALAd *)ad didFailWithError:(NSInteger)responseCode
+{
+    [self log: @"Rewarded video validation request for ad failed with error code: %ld", responseCode];
 }
 
-#pragma mark - ALAdRewardDelegate methods
-
-- (void)rewardValidationRequestForAd:(ALAd *)ad
-          didExceedQuotaWithResponse:(NSDictionary *)response {
-  [self ALLog:@"User exceeded quota."];
+- (void)rewardValidationRequestForAd:(ALAd *)ad wasRejectedWithResponse:(NSDictionary *)response
+{
+    [self log: @"Rewarded video validation request was rejected with response: %@", response];
 }
 
-- (void)rewardValidationRequestForAd:(ALAd *)ad
-                    didFailWithError:(NSInteger)responseCode {
-  [self ALLog:@"User could not be validated or closed ad early."];
+- (void)userDeclinedToViewAd:(ALAd *)ad
+{
+    [self log: @"User declined to view rewarded video"];
 }
 
-- (void)rewardValidationRequestForAd:(ALAd *)ad
-              didSucceedWithResponse:(NSDictionary *)response {
-  [self ALLog:@"Granting reward."];
-  NSNumber *amount = [response objectForKey:@"amount"];
-  NSString *currency = [response objectForKey:@"currency"];
-
-  MPRewardedVideoReward *reward =
-      [[MPRewardedVideoReward alloc] initWithCurrencyType:currency
-                                                   amount:amount];
-  [self.delegate rewardedVideoShouldRewardUserForCustomEvent:self
-                                                      reward:reward];
+- (void)rewardValidationRequestForAd:(ALAd *)ad didSucceedWithResponse:(NSDictionary *)response
+{
+    NSNumber *amount = response[@"amount"];
+    NSString *currency = response[@"currency"];
+    
+    [self log: [NSString stringWithFormat: @"Rewarded %@ %@", amount, currency]];
+    
+    MPRewardedVideoReward *reward = [[MPRewardedVideoReward alloc] initWithCurrencyType: currency amount: amount];
+    [self.delegate rewardedVideoShouldRewardUserForCustomEvent: self reward: reward];
 }
 
-- (void)rewardValidationRequestForAd:(ALAd *)ad
-             wasRejectedWithResponse:(NSDictionary *)response {
-  [self ALLog:@"User rejected by AppLovin servers."];
-}
+#pragma mark - Utility Methods
 
-- (void)userDeclinedToViewAd:(ALAd *)ad {
-  [self ALLog:@"User declined to view rewarded video."];
-  self.adReady = YES;
-}
-
-- (void)ALLog:(NSString *)logMessage {
-  if (loggingEnabled) {
-    NSLog(@"AppLovinAdapter: %@", logMessage);
-  }
+- (void)log:(NSString *)format, ...
+{
+    if ( kALLoggingEnabled )
+    {
+        va_list valist;
+        va_start(valist, format);
+        NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
+        va_end(valist);
+        
+        NSLog(@"AppLovinRewardedCustomEvent: %@", message);
+    }
 }
 
 @end
