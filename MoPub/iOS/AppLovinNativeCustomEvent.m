@@ -62,15 +62,10 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     NSMutableArray al_of_type(<NSURL *>) *imageURLs = [NSMutableArray arrayWithCapacity: 2];
     
-    if ( nativeAd.iconURL )
-    {
-        [imageURLs addObject: nativeAd.iconURL];
-    }
+    if ( nativeAd.iconURL ) [imageURLs addObject: nativeAd.iconURL];
+    if ( nativeAd.imageURL ) [imageURLs addObject: nativeAd.imageURL];
     
-    if ( nativeAd.imageURL )
-    {
-        [imageURLs addObject: nativeAd.imageURL];
-    }
+    // Please note: If/when we add support for videos, we must use AppLovin SDK's built-in precaching mechanism
     
     [self precacheImagesWithURLs: imageURLs completionBlock:^(NSArray al_of_type(<NSError *>) *errors)
      {
