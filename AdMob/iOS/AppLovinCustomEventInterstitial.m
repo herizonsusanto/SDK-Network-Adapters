@@ -1,44 +1,46 @@
 //
-//  AppLovinInterstitialCustomEvent.m
+//  AppLovinCustomEventInterstitialEvent.m
 //
 //
-//  Created by Thomas So on 5/21/17.
+//  Created by Thomas So on 5/20/17.
 //
 //
 
-#import "AppLovinInterstitialCustomEvent.h"
+#import "AppLovinCustomEventInterstitial.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
+    #import "ALAdService.h"
     #import "ALInterstitialAd.h"
 #endif
 
-@interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
+@interface AppLovinCustomEventInterstitial() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
 @property (nonatomic, strong) ALInterstitialAd *interstitialAd;
 @property (nonatomic, strong) ALAd *loadedAd;
 
 @end
 
-@implementation AppLovinInterstitialCustomEvent
+@implementation AppLovinCustomEventInterstitial
+@synthesize delegate;
 
 static const BOOL kALLoggingEnabled = YES;
-static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
+static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
 
-#pragma mark - MPInterstitialCustomEvent Overridden Methods
+#pragma mark - GADCustomEventInterstitial Protocol
 
-- (void)requestInterstitialWithCustomEventInfo:(NSDictionary *)info
+- (void)requestInterstitialAdWithParameter:(NSString *)serverParameter label:(NSString *)serverLabel request:(GADCustomEventRequest *)request
 {
-    [self log: @"Requesting AppLovin interstitial with info: %@", info];
+    [self log: @"Requesting AppLovin interstitial"];
     
-    [[ALSdk shared] setPluginVersion: @"MoPubInterstitial-1.0"];
+    [[ALSdk shared] setPluginVersion: @"AdMobInterstitial-1.0"];
     
     ALAdService *adService = [ALSdk shared].adService;
     [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
 }
 
-- (void)showInterstitialFromRootViewController:(UIViewController *)rootViewController
+- (void)presentFromRootViewController:(UIViewController *)rootViewController
 {
     if ( self.loadedAd )
     {
@@ -51,11 +53,11 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         [self log: @"Failed to show an AppLovin interstitial before one was loaded"];
         
-        NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+        NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
                                          userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display an interstitial before one was loaded"}];
         
-        [self.delegate interstitialCustomEvent: self didFailToLoadAdWithError: error];
+        [self.delegate customEventInterstitial: self didFailAd: error];
     }
 }
 
@@ -67,17 +69,27 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     self.loadedAd = ad;
     
-    [self.delegate interstitialCustomEvent: self didLoadAd: ad];
+    if ( [self.delegate respondsToSelector: @selector(customEventInterstitialDidReceiveAd:)] )
+    {
+        [self.delegate performSelector: @selector(customEventInterstitialDidReceiveAd:) withObject: self];
+    }
+    // Older versions of AdMob
+    else
+    {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        [self.delegate customEventInterstitial: self didReceiveAd: ad];
+#pragma GCC diagnostic pop
+    }
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
 {
     [self log: @"Interstitial failed to load with error: %d", code];
     
-    // TODO: Translate between AppLovin <-> MoPub error codes
-    
-    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain code: code userInfo: nil];
-    [self.delegate interstitialCustomEvent: self didFailToLoadAdWithError: error];
+    // TODO: Translate between AppLovin <-> AdMob error codes
+    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain code: code userInfo: nil];
+    [self.delegate customEventInterstitial: self didFailAd: error];
 }
 
 #pragma mark - Ad Display Delegate
@@ -86,24 +98,22 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Interstitial displayed"];
     
-    [self.delegate interstitialCustomEventWillAppear: self];
-    [self.delegate interstitialCustomEventDidAppear: self];
+    [self.delegate customEventInterstitialWillPresent: self];
 }
 
 - (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
 {
     [self log: @"Interstitial dismissed"];
     
-    [self.delegate interstitialCustomEventWillDisappear: self];
-    [self.delegate interstitialCustomEventDidDisappear: self];
+    [self.delegate customEventInterstitialWillDismiss: self];
+    [self.delegate customEventInterstitialDidDismiss: self];
 }
 
 - (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
 {
     [self log: @"Interstitial clicked"];
     
-    [self.delegate interstitialCustomEventDidReceiveTapEvent: self];
-    [self.delegate interstitialCustomEventWillLeaveApplication: self];
+    [self.delegate customEventInterstitialWillLeaveApplication: self];
 }
 
 #pragma mark - Video Playback Delegate
@@ -129,7 +139,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
         va_end(valist);
         
-        NSLog(@"AppLovinInterstitialCustomEvent: %@", message);
+        NSLog(@"AppLovinCustomEventInterstitial: %@", message);
     }
 }
 

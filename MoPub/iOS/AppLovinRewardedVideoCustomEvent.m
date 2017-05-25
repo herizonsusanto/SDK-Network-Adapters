@@ -1,10 +1,13 @@
 //
-//  AppLovinRewardedCustomEvent.m
+//  AppLovinRewardedVideoCustomEvent.m
 //
 //
 //  Created by Thomas So on 5/21/17.
 //
 //
+
+#import "AppLovinRewardedVideoCustomEvent.h"
+#import "MPRewardedVideoReward.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
@@ -12,14 +15,11 @@
     #import "ALIncentivizedInterstitialAd.h"
 #endif
 
-#import "AppLovinRewardedCustomEvent.h"
-#import "MPRewardedVideoReward.h"
-
-@interface AppLovinRewardedCustomEvent()<ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
+@interface AppLovinRewardedVideoCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
 @end
 
-@implementation AppLovinRewardedCustomEvent
+@implementation AppLovinRewardedVideoCustomEvent
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
@@ -32,16 +32,13 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     [[ALSdk shared] setPluginVersion: @"MoPubRewardedVideo-1.0"];
     
-    if ( !self.incent )
+    if ( [self hasAdAvailable] )
     {
-        self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
-        self.incent.adVideoPlaybackDelegate = self;
-        self.incent.adDisplayDelegate = self;
+        [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
     }
-    
-    if ( ![self hasAdAvailable] )
+    else
     {
-        [self.incent preloadAndNotify:self];
+        [self.incent preloadAndNotify: self];
     }
 }
 
@@ -54,15 +51,15 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     if ( [self hasAdAvailable] )
     {
-        [self.incent showAndNotify:self];
+        [self.incent showAndNotify: self];
     }
     else
     {
-        [self log: @"Failed to show an AppLovin rewarded video before one was loaded."];
+        [self log: @"Failed to show an AppLovin rewarded video before one was loaded"];
         
         NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
-                                        userInfo :@{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded."}];
+                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
         
         [self.delegate rewardedVideoDidFailToPlayForCustomEvent: self error: error];
     }
@@ -75,8 +72,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
-    [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
-    
+    [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];   
     [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
 }
 
@@ -155,10 +151,24 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     NSNumber *amount = response[@"amount"];
     NSString *currency = response[@"currency"];
     
-    [self log: [NSString stringWithFormat: @"Rewarded %@ %@", amount, currency]];
+    [self log: @"Rewarded %@ %@", amount, currency];
     
     MPRewardedVideoReward *reward = [[MPRewardedVideoReward alloc] initWithCurrencyType: currency amount: amount];
     [self.delegate rewardedVideoShouldRewardUserForCustomEvent: self reward: reward];
+}
+
+#pragma mark - Incentivized Interstitial
+
+- (ALIncentivizedInterstitialAd *)incent
+{
+    if ( !_incent )
+    {
+        _incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+        _incent.adVideoPlaybackDelegate = self;
+        _incent.adDisplayDelegate = self;
+    }
+    
+    return _incent;
 }
 
 #pragma mark - Utility Methods
@@ -172,7 +182,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
         va_end(valist);
         
-        NSLog(@"AppLovinRewardedCustomEvent: %@", message);
+        NSLog(@"AppLovinRewardedVideoCustomEvent: %@", message);
     }
 }
 

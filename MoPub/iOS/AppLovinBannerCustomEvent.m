@@ -6,16 +6,17 @@
 //
 //
 
+
+#import "AppLovinBannerCustomEvent.h"
+#import "MPConstants.h"
+
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
     #import "ALAdView.h"
 #endif
 
-#import "AppLovinBannerCustomEvent.h"
-#import "MPConstants.h"
-
-@interface AppLovinBannerCustomEvent()<ALAdLoadDelegate, ALAdDisplayDelegate>
+@interface AppLovinBannerCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate>
 @end
 
 @implementation AppLovinBannerCustomEvent

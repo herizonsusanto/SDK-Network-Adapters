@@ -6,13 +6,13 @@
 //
 //
 
+#import "AppLovinCustomEventBanner.h"
+
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
     #import "ALAdView.h"
 #endif
-
-#import "AppLovinCustomEventBanner.h"
 
 @interface AppLovinCustomEventBanner()<ALAdLoadDelegate, ALAdDisplayDelegate>
 @end
@@ -22,6 +22,8 @@
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
+
+#pragma mark - GADCustomEventBanner Protocol
 
 - (void)requestBannerAd:(GADAdSize)adSize parameter:(NSString *)serverParameter label:(NSString *)serverLabel request:(GADCustomEventRequest *)request
 {

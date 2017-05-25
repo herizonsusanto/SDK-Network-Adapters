@@ -6,7 +6,6 @@
 //
 //
 
-#import <Foundation/Foundation.h>
 @import GoogleMobileAds;
 
 @interface AppLovinCustomEventBanner : NSObject <GADCustomEventBanner>

@@ -6,19 +6,19 @@
 //
 //
 
-#if __has_include(<AppLovinSDK/AppLovinSDK.h>)
-    #import <AppLovinSDK/AppLovinSDK.h>
-#else
-    #import "ALSdk.h"
-#endif
-
 #import "AppLovinNativeCustomEvent.h"
 #import "MPNativeAdError.h"
 #import "MPNativeAd.h"
 #import "MPNativeAdAdapter.h"
 #import "MPNativeAdConstants.h"
 
-@interface AppLovinNativeAdapter : NSObject<MPNativeAdAdapter, ALPostbackDelegate>
+#if __has_include(<AppLovinSDK/AppLovinSDK.h>)
+    #import <AppLovinSDK/AppLovinSDK.h>
+#else
+    #import "ALSdk.h"
+#endif
+
+@interface AppLovinNativeAdapter : NSObject <MPNativeAdAdapter, ALPostbackDelegate>
 
 /**
  * The underlying MP dictionary representing the contents of the native ad.
@@ -32,7 +32,7 @@
 
 @end
 
-@interface AppLovinNativeCustomEvent()<ALNativeAdLoadDelegate>
+@interface AppLovinNativeCustomEvent() <ALNativeAdLoadDelegate>
 @end
 
 @implementation AppLovinNativeCustomEvent
@@ -100,7 +100,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     // TODO: Translate between AppLovin <-> MoPub error codes
     NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain code: MPNativeAdErrorNoInventory userInfo: nil];
-    [self.delegate nativeCustomEvent:self didFailToLoadAdWithError: error];
+    [self.delegate nativeCustomEvent: self didFailToLoadAdWithError: error];
 }
 
 #pragma mark - Utility Methods
