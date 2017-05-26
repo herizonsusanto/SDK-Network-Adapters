@@ -70,28 +70,15 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     [self precacheImagesWithURLs: imageURLs completionBlock:^(NSArray al_of_type(<NSError *>) *errors)
      {
-         if ( errors.count == 0  )
-         {
-             [[self class] log: @"Native ad done precaching"];
-             
-             AppLovinNativeAdapter *adapter = [[AppLovinNativeAdapter alloc] initWithNativeAd: nativeAd];
-             MPNativeAd *nativeAd = [[MPNativeAd alloc] initWithAdAdapter: adapter];
-             
-             [self.delegate nativeCustomEvent: self didLoadAd: nativeAd];
-             
-             [adapter willAttachToView: nil];
-             [adapter displayContentForURL: nil rootViewController: [UIApplication sharedApplication].keyWindow.rootViewController];
-         }
-         else
-         {
-             [[self class] log: @"Native ad failed to precache images with error(s)", errors];
-             
-             NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
-                                                  code: MPNativeAdErrorImageDownloadFailed
-                                              userInfo: nil];
-             
-             [self.delegate nativeCustomEvent: self didFailToLoadAdWithError: error];
-         }
+         [[self class] log: @"Native ad done precaching"];
+         
+         AppLovinNativeAdapter *adapter = [[AppLovinNativeAdapter alloc] initWithNativeAd: nativeAd];
+         MPNativeAd *nativeAd = [[MPNativeAd alloc] initWithAdAdapter: adapter];
+         
+         [self.delegate nativeCustomEvent: self didLoadAd: nativeAd];
+         
+         [adapter willAttachToView: nil];
+         [adapter displayContentForURL: nil rootViewController: [UIApplication sharedApplication].keyWindow.rootViewController];
      }];
 }
 
