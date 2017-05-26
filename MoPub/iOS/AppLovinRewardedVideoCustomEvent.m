@@ -30,7 +30,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Requesting AppLovin rewarded video with info: %@", info];
     
-    [[ALSdk shared] setPluginVersion: @"MoPubRewardedVideo-1.0"];
+    [[ALSdk shared] setPluginVersion: @"MoPub-2.0"];
     
     if ( [self hasAdAvailable] )
     {

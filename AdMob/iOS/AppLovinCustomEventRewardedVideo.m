@@ -35,7 +35,7 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 
 + (NSString *)adapterVersion
 {
-    return @"AdMobRewardedVideo-1.0";
+    return @"AdMob-2.0";
 }
 
 + (Class<GADAdNetworkExtras>)networkExtrasClass
@@ -63,7 +63,8 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Requesting AppLovin rewarded video"];
     
-    [[ALSdk shared] setPluginVersion: @"AdMobRewardedVideo-1.0"];
+    NSString *adapterVersion = [[self class] adapterVersion];
+    [[ALSdk shared] setPluginVersion: adapterVersion];
     
     self.reward = nil;
     self.fullyWatched = NO;
