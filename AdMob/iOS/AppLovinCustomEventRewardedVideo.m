@@ -115,7 +115,7 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     [self log: @"Rewarded video failed to load with error: %d", code];
     
     NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
-                                         code: (code == kALErrorCodeNoFill) ? kGADErrorMediationNoFill : kGADErrorNetworkError
+                                         code: [self toAdMobErrorCode: code]
                                      userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
     [self.connector adapter: self didFailToLoadRewardBasedVideoAdwithError: error];
 }
@@ -221,6 +221,30 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         va_end(valist);
         
         NSLog(@"AppLovinCustomEventRewardedVideo: %@", message);
+    }
+}
+
+- (GADErrorCode)toAdMobErrorCode:(int)appLovinErrorCode
+{
+    if ( appLovinErrorCode == kALErrorCodeNoFill )
+    {
+        return kGADErrorMediationNoFill;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeAdRequestNetworkTimeout )
+    {
+        return kGADErrorTimeout;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeInvalidResponse )
+    {
+        return kGADErrorReceivedInvalidResponse;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeUnableToRenderAd )
+    {
+        return kGADErrorServerError;
+    }
+    else
+    {
+        return kGADErrorInternalError;
     }
 }
 

@@ -11,6 +11,7 @@
 #import "MPNativeAd.h"
 #import "MPNativeAdAdapter.h"
 #import "MPNativeAdConstants.h"
+#import "MPError.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
@@ -98,8 +99,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [[self class] log: @"Native ad video failed to load with error: %d", code];
     
-    // TODO: Translate between AppLovin <-> MoPub error codes
-    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain code: MPNativeAdErrorNoInventory userInfo: nil];
+    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                         code: MPNativeAdErrorNoInventory
+                                     userInfo: nil];
     [self.delegate nativeCustomEvent: self didFailToLoadAdWithError: error];
 }
 

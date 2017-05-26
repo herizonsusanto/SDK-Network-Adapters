@@ -7,6 +7,7 @@
 //
 
 #import "AppLovinInterstitialCustomEvent.h"
+#import "MPError.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
@@ -74,9 +75,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Interstitial failed to load with error: %d", code];
     
-    // TODO: Translate between AppLovin <-> MoPub error codes
-    
-    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain code: code userInfo: nil];
+    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                         code: [self toMoPubErrorCode: code]
+                                     userInfo: nil];
     [self.delegate interstitialCustomEvent: self didFailToLoadAdWithError: error];
 }
 
@@ -130,6 +131,26 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         va_end(valist);
         
         NSLog(@"AppLovinInterstitialCustomEvent: %@", message);
+    }
+}
+
+- (MOPUBErrorCode)toMoPubErrorCode:(int)appLovinErrorCode
+{
+    if ( appLovinErrorCode == kALErrorCodeNoFill )
+    {
+        return MOPUBErrorAdapterHasNoInventory;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeAdRequestNetworkTimeout )
+    {
+        return MOPUBErrorNetworkTimedOut;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeInvalidResponse )
+    {
+        return MOPUBErrorServerError;
+    }
+    else
+    {
+        return MOPUBErrorUnknown;
     }
 }
 

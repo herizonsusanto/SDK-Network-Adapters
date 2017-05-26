@@ -48,7 +48,9 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         [self log: @"Failed to create an AppLovin Banner with invalid size"];
         
-        NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain code: kALErrorCodeUnableToRenderAd userInfo: nil];
+        NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                             code: kGADErrorMediationInvalidAdSize
+                                         userInfo: nil];
         [self.delegate customEventBanner: self didFailAd: error];
     }
 }
@@ -64,7 +66,9 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Banner failed to load with error: %d", code];
     
-    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain code: code userInfo: nil];
+    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                         code: [self toAdMobErrorCode: code]
+                                     userInfo: nil];
     [self.delegate customEventBanner: self didFailAd: error];
 }
 
@@ -118,6 +122,30 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         va_end(valist);
         
         NSLog(@"AppLovinCustomEventBanner: %@", message);
+    }
+}
+
+- (GADErrorCode)toAdMobErrorCode:(int)appLovinErrorCode
+{
+    if ( appLovinErrorCode == kALErrorCodeNoFill )
+    {
+        return kGADErrorMediationNoFill;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeAdRequestNetworkTimeout )
+    {
+        return kGADErrorTimeout;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeInvalidResponse )
+    {
+        return kGADErrorReceivedInvalidResponse;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeUnableToRenderAd )
+    {
+        return kGADErrorServerError;
+    }
+    else
+    {
+        return kGADErrorInternalError;
     }
 }
 

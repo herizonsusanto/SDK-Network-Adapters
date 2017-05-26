@@ -87,8 +87,9 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Interstitial failed to load with error: %d", code];
     
-    // TODO: Translate between AppLovin <-> AdMob error codes
-    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain code: code userInfo: nil];
+    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                         code: [self toAdMobErrorCode: code]
+                                     userInfo: nil];
     [self.delegate customEventInterstitial: self didFailAd: error];
 }
 
@@ -140,6 +141,30 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         va_end(valist);
         
         NSLog(@"AppLovinCustomEventInterstitial: %@", message);
+    }
+}
+
+- (GADErrorCode)toAdMobErrorCode:(int)appLovinErrorCode
+{
+    if ( appLovinErrorCode == kALErrorCodeNoFill )
+    {
+        return kGADErrorMediationNoFill;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeAdRequestNetworkTimeout )
+    {
+        return kGADErrorTimeout;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeInvalidResponse )
+    {
+        return kGADErrorReceivedInvalidResponse;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeUnableToRenderAd )
+    {
+        return kGADErrorServerError;
+    }
+    else
+    {
+        return kGADErrorInternalError;
     }
 }
 
