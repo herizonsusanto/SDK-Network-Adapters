@@ -20,8 +20,9 @@
 
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
 
-@property (nonatomic, assign, getter=isFullyWatched) BOOL fullyWatched;
+@property (nonatomic, assign) BOOL fullyWatched;
 @property (nonatomic, strong) GADAdReward *reward;
+
 @property (nonatomic,   weak) id<GADMRewardBasedVideoAdNetworkConnector> connector;
 
 @end
@@ -66,9 +67,6 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     NSString *adapterVersion = [[self class] adapterVersion];
     [[ALSdk shared] setPluginVersion: adapterVersion];
     
-    self.reward = nil;
-    self.fullyWatched = NO;
-    
     if ( self.incent.readyForDisplay )
     {
         [self.connector adapterDidReceiveRewardBasedVideoAd: self];
@@ -83,6 +81,9 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     if ( self.incent.readyForDisplay )
     {
+        self.reward = nil;
+        self.fullyWatched = NO;
+        
         [self.incent showAndNotify: self];
     }
     else

@@ -17,7 +17,12 @@
 #endif
 
 @interface AppLovinRewardedVideoCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
+
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
+
+@property (nonatomic, assign) BOOL fullyWatched;
+@property (nonatomic, strong) MPRewardedVideoReward *reward;
+
 @end
 
 @implementation AppLovinRewardedVideoCustomEvent
@@ -52,6 +57,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     if ( [self hasAdAvailable] )
     {
+        self.reward = nil;
+        self.fullyWatched = NO;
+        
         [self.incent showAndNotify: self];
     }
     else
@@ -100,6 +108,11 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
 {
     [self log: @"Rewarded video dismissed"];
+    
+    if ( self.fullyWatched && self.reward )
+    {
+        [self.delegate rewardedVideoShouldRewardUserForCustomEvent: self reward: reward];
+    }
     
     [self.delegate rewardedVideoWillDisappearForCustomEvent: self];
     [self.delegate rewardedVideoDidDisappearForCustomEvent: self];
@@ -154,8 +167,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     [self log: @"Rewarded %@ %@", amount, currency];
     
-    MPRewardedVideoReward *reward = [[MPRewardedVideoReward alloc] initWithCurrencyType: currency amount: amount];
-    [self.delegate rewardedVideoShouldRewardUserForCustomEvent: self reward: reward];
+    self.reward = [[MPRewardedVideoReward alloc] initWithCurrencyType: currency amount: amount];
 }
 
 #pragma mark - Incentivized Interstitial

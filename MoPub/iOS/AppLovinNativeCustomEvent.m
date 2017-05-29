@@ -143,6 +143,11 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 - (void)willAttachToView:(UIView *)view
 {
+    if ( [self.delegate respondsToSelector: @selector(nativeAdWillLogImpression:)] )
+    {
+        [self.delegate nativeAdWillLogImpression: self];
+    }
+    
     // As of >= 4.1.0, we support convenience methods for impression tracking
     if ( [self.nativeAd respondsToSelector: @selector(trackImpressionAndNotify:)] )
     {
