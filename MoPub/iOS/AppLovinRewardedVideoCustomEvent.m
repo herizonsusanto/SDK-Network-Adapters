@@ -158,6 +158,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)userDeclinedToViewAd:(ALAd *)ad
 {
     [self log: @"User declined to view rewarded video"];
+    
+    [self.delegate rewardedVideoWillDisappearForCustomEvent: self];
+    [self.delegate rewardedVideoDidDisappearForCustomEvent: self];
 }
 
 - (void)rewardValidationRequestForAd:(ALAd *)ad didSucceedWithResponse:(NSDictionary *)response

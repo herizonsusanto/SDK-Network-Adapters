@@ -200,21 +200,18 @@ public class AppLovinCustomEventRewardedVideo
     public void userOverQuota(final AppLovinAd appLovinAd, final Map<String, String> map)
     {
         log( ERROR, "Rewarded video validation request for ad did exceed quota with response: " + map );
-        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
     }
 
     @Override
     public void validationRequestFailed(final AppLovinAd appLovinAd, final int errorCode)
     {
         log( ERROR, "Rewarded video validation request for ad failed with error code: " + errorCode );
-        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
     }
 
     @Override
     public void userRewardRejected(final AppLovinAd appLovinAd, final Map<String, String> map)
     {
         log( ERROR, "Rewarded video validation request was rejected with response: " + map );
-        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
     }
 
     @Override
