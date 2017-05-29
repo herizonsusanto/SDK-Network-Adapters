@@ -111,7 +111,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     if ( self.fullyWatched && self.reward )
     {
-        [self.delegate rewardedVideoShouldRewardUserForCustomEvent: self reward: reward];
+        [self.delegate rewardedVideoShouldRewardUserForCustomEvent: self reward: self.reward];
     }
     
     [self.delegate rewardedVideoWillDisappearForCustomEvent: self];
