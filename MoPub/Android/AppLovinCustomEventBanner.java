@@ -17,21 +17,28 @@ import com.mopub.mobileads.MoPubErrorCode;
 
 import java.util.Map;
 
+import static android.util.Log.DEBUG;
+import static android.util.Log.ERROR;
+
 /**
- * AppLovin Banner SDK Mediation for MoPub.
+ * AppLovin SDK banner adapter for MoPub.
  * <p>
  * Created by Thomas So on 3/6/17.
  *
- * @version 1.0
+ * @version 2.0
  */
 
-public class AppLovinBannerAdapter
+public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {
-    private static final String TAG = "AppLovinBannerAdapter";
+    private static final boolean LOGGING_ENABLED = true;
 
     private static final String AD_WIDTH_KEY  = "com_mopub_ad_width";
     private static final String AD_HEIGHT_KEY = "com_mopub_ad_height";
+
+    //
+    // MoPub Custom Event Methods
+    //
 
     @Override
     protected void loadBanner(final Context context, final CustomEventBannerListener customEventBannerListener, final Map<String, Object> localExtras, final Map<String, String> serverExtras)
@@ -39,49 +46,34 @@ public class AppLovinBannerAdapter
         // SDK versions BELOW 7.1.0 require a instance of an Activity to be passed in as the context
         if ( AppLovinSdk.VERSION_CODE < 710 && !( context instanceof Activity ) )
         {
-            Log.e( TAG, "Unable to request AppLovin banner. Invalid context provided." );
+            log( ERROR, "Unable to request AppLovin banner. Invalid context provided." );
             customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
+
             return;
         }
 
-        Log.d( TAG, "Requesting AppLovin banner with serverExtras: " + localExtras );
+        log( DEBUG, "Requesting AppLovin banner with localExtras: " + localExtras );
 
         final AppLovinAdSize adSize = appLovinAdSizeFromServerExtras( localExtras );
         if ( adSize != null )
         {
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-            sdk.setPluginVersion( "MoPubBanner-1.0" );
+            sdk.setPluginVersion( "MoPub-2.0" );
 
-            final AppLovinAdView adView = new AppLovinAdView( adSize, (Activity) context );
+            final AppLovinAdView adView = new AppLovinAdView( adSize, context );
             adView.setAdLoadListener( new AppLovinAdLoadListener()
             {
                 @Override
                 public void adReceived(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Successfully loaded banner ad" );
+                    log( DEBUG, "Successfully loaded banner ad" );
                 }
 
                 @Override
                 public void failedToReceiveAd(final int errorCode)
                 {
-                    Log.e( TAG, "Failed to load banner ad with code: " + errorCode );
-
-                    if ( errorCode == AppLovinErrorCodes.NO_FILL )
-                    {
-                        customEventBannerListener.onBannerFailed( MoPubErrorCode.NETWORK_NO_FILL );
-                    }
-                    else if ( errorCode >= 500 )
-                    {
-                        customEventBannerListener.onBannerFailed( MoPubErrorCode.SERVER_ERROR );
-                    }
-                    else if ( errorCode < 0 )
-                    {
-                        customEventBannerListener.onBannerFailed( MoPubErrorCode.INTERNAL_ERROR );
-                    }
-                    else
-                    {
-                        customEventBannerListener.onBannerFailed( MoPubErrorCode.UNSPECIFIED );
-                    }
+                    log( ERROR, "Failed to load banner ad with code: " + errorCode );
+                    customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
                 }
             } );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
@@ -89,13 +81,13 @@ public class AppLovinBannerAdapter
                 @Override
                 public void adDisplayed(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Banner displayed" );
+                    log( DEBUG, "Banner displayed" );
                 }
 
                 @Override
                 public void adHidden(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Banner dismissed" );
+                    log( DEBUG, "Banner dismissed" );
                 }
             } );
             adView.setAdClickListener( new AppLovinAdClickListener()
@@ -103,7 +95,7 @@ public class AppLovinBannerAdapter
                 @Override
                 public void adClicked(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Banner clicked" );
+                    log( DEBUG, "Banner clicked" );
 
                     customEventBannerListener.onBannerClicked();
                     customEventBannerListener.onLeaveApplication();
@@ -115,21 +107,25 @@ public class AppLovinBannerAdapter
         }
         else
         {
-            Log.e( TAG, "Unable to request AppLovin banner" );
+            log( ERROR, "Unable to request AppLovin banner" );
 
             customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
         }
     }
 
     @Override
-    protected void onInvalidate() { }
+    protected void onInvalidate() {}
+
+    //
+    // Utility Methods
+    //
 
     private AppLovinAdSize appLovinAdSizeFromServerExtras(final Map<String, Object> serverExtras)
     {
         // Handle trivial case
         if ( serverExtras == null || serverExtras.isEmpty() )
         {
-            Log.e( TAG, "No serverExtras provided" );
+            log( ERROR, "No serverExtras provided" );
             return null;
         }
 
@@ -141,7 +137,7 @@ public class AppLovinBannerAdapter
             // We have valid dimensions
             if ( width > 0 && height > 0 )
             {
-                Log.d( TAG, "Valid width (" + width + ") and height (" + height + ") provided" );
+                log( DEBUG, "Valid width (" + width + ") and height (" + height + ") provided" );
 
                 // Use the smallest AppLovinAdSize that will properly contain the adView
 
@@ -155,19 +151,60 @@ public class AppLovinBannerAdapter
                 }
                 else
                 {
-                    Log.e( TAG, "Provided dimensions does not meet the dimensions required of banner or mrec ads" );
+                    log( ERROR, "Provided dimensions does not meet the dimensions required of banner or mrec ads" );
                 }
             }
             else
             {
-                Log.e( TAG, "Invalid width (" + width + ") and height (" + height + ") provided" );
+                log( ERROR, "Invalid width (" + width + ") and height (" + height + ") provided" );
             }
         }
         catch ( Throwable th )
         {
-            Log.e( TAG, "Encountered error while parsing width and height from serverExtras", th );
+            log( ERROR, "Encountered error while parsing width and height from serverExtras", th );
         }
 
         return null;
+    }
+
+    //
+    // Utility Methods
+    //
+
+    private static void log(final int priority, final String message)
+    {
+        log( priority, message, null );
+    }
+
+    private static void log(final int priority, final String message, final Throwable th)
+    {
+        if ( LOGGING_ENABLED )
+        {
+            Log.println( priority, "AppLovinCustomEventBanner", message + ( ( th == null ) ? "" : Log.getStackTraceString( th ) ) );
+        }
+    }
+
+    private static MoPubErrorCode toMoPubErrorCode(final int applovinErrorCode)
+    {
+        if ( applovinErrorCode == AppLovinErrorCodes.NO_FILL )
+        {
+            return MoPubErrorCode.NETWORK_NO_FILL;
+        }
+        else if ( applovinErrorCode == AppLovinErrorCodes.UNSPECIFIED_ERROR )
+        {
+            return MoPubErrorCode.NETWORK_INVALID_STATE;
+        }
+        else if ( applovinErrorCode == AppLovinErrorCodes.NO_NETWORK )
+        {
+            return MoPubErrorCode.NO_CONNECTION;
+        }
+        else if ( applovinErrorCode == AppLovinErrorCodes.FETCH_AD_TIMEOUT )
+        {
+            return MoPubErrorCode.NETWORK_TIMEOUT;
+        }
+        else
+        {
+            return MoPubErrorCode.UNSPECIFIED;
+        }
     }
 }
