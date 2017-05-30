@@ -31,12 +31,13 @@
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
+static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
 
 #pragma mark - GADMRewardBasedVideoAdNetworkAdapter Protocol
 
 + (NSString *)adapterVersion
 {
-    return @"AdMob-2.0";
+    return kALAdMobAdapterVersion;
 }
 
 + (Class<GADAdNetworkExtras>)networkExtrasClass
@@ -57,6 +58,8 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)setUp
 {
     [[ALSdk shared] initializeSdk];
+    [[ALSdk shared] setPluginVersion: kALAdMobAdapterVersion];
+    
     [self.connector adapterDidSetUpRewardBasedVideoAd: self];
 }
 
