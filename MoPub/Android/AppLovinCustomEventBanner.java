@@ -28,6 +28,7 @@ import static android.util.Log.ERROR;
  * @version 2.0
  */
 
+// Please note: We have renamed this class from "AppLovinBannerAdapter" to "AppLovinCustomEventBanner", please make sure you have the appropriate class name in your MoPub account
 public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {

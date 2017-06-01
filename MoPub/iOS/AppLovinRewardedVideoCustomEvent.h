@@ -8,7 +8,7 @@
 
 #import "MPRewardedVideoCustomEvent.h"
 
-// Please note: We have renamed this class from "AppLovinRewardedVideoCustomEvent" to "AppLovinRewardedVideoCustomEvent", please make sure you have the appropriate class name in your MoPub account
+// Please note: We have renamed this class from "AppLovinRewardedCustomEvent" to "AppLovinRewardedVideoCustomEvent", please make sure you have the appropriate class name in your MoPub account
 @interface AppLovinRewardedVideoCustomEvent : MPRewardedVideoCustomEvent
 
 @end
