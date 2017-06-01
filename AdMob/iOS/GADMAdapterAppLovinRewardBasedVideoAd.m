@@ -1,13 +1,13 @@
 
 //
-//  AppLovinCustomEventRewardedVideo.m
+//  GADMAdapterAppLovinRewardBasedVideoAd.m
 //
 //
 //  Created by Thomas So on 5/20/17.
 //
 //
 
-#import "AppLovinCustomEventRewardedVideo.h"
+#import "GADMAdapterAppLovinRewardBasedVideoAd.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
@@ -16,7 +16,7 @@
     #import "ALIncentivizedInterstitialAd.h"
 #endif
 
-@interface AppLovinCustomEventRewardedVideo() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
+@interface GADMAdapterAppLovinRewardBasedVideoAd() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
 
@@ -27,7 +27,7 @@
 
 @end
 
-@implementation AppLovinCustomEventRewardedVideo
+@implementation GADMAdapterAppLovinRewardBasedVideoAd
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
