@@ -33,8 +33,7 @@ import static android.util.Log.ERROR;
  * @version 2.0
  */
 
-// Please note: We have renamed this class from "ApplovinAdapter" to "AppLovinCustomEventRewardedVideo", please make sure you have the appropriate class name in your GADs account
-public class AppLovinCustomEventRewardedVideo
+public class ApplovinAdapter
         implements MediationRewardedVideoAdAdapter,
         AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
