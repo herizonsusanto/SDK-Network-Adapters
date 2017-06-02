@@ -76,6 +76,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
 {
     [self log: @"Banner displayed"];
+    
+    // `didDisplayAd` of this class would not be called by MoPub on AppLovin banner refresh if enabled.
+    // Only way to track impression of AppLovin refresh is via this callback.
     [self.delegate trackImpression];
 }
 
