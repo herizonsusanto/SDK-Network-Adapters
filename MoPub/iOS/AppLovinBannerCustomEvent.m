@@ -16,6 +16,7 @@
 #import "MPConstants.h"
 
 @interface AppLovinBannerCustomEvent()<ALAdLoadDelegate, ALAdDisplayDelegate>
+@property (nonatomic, strong) ALAdView *adView;
 @end
 
 @implementation AppLovinBannerCustomEvent
@@ -35,10 +36,10 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         [[ALSdk shared] setPluginVersion: @"MoPubBanner-1.0"];
         
-        ALAdView *adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
-        adView.adLoadDelegate = self;
-        adView.adDisplayDelegate = self;
-        [adView loadNextAd];
+        self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
+        self.adView.adLoadDelegate = self;
+        self.adView.adDisplayDelegate = self;
+        [self.adView loadNextAd];
     }
     else
     {
@@ -59,7 +60,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Banner did load ad: %@", ad.adIdNumber];
-    [self.delegate bannerCustomEvent: self didLoadAd: adView];
+    [self.delegate bannerCustomEvent: self didLoadAd: self.adView];
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
