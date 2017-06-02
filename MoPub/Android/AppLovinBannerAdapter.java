@@ -59,6 +59,7 @@ public class AppLovinBannerAdapter
                 public void adReceived(final AppLovinAd ad)
                 {
                     Log.d( TAG, "Successfully loaded banner ad" );
+                    customEventBannerListener.onBannerLoaded( adView );
                 }
 
                 @Override
@@ -110,8 +111,6 @@ public class AppLovinBannerAdapter
                 }
             } );
             adView.loadNextAd();
-
-            customEventBannerListener.onBannerLoaded( adView );
         }
         else
         {
