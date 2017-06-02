@@ -30,7 +30,9 @@ import static android.util.Log.ERROR;
  * @version 2.0
  */
 
-// Please note: We have renamed this class from "AppLovinInterstitialAdapter" to "AppLovinCustomEventInterstitial", please make sure you have the appropriate class name in your GADs account
+// Please note: We have renamed this class from "AppLovinInterstitialAdapter" to "AppLovinCustomEventInterstitial".
+// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventInterstitial" as the custom event classname in the MoPub dashboard.
+// If you have integrated this before, please rename this class back to "AppLovinInterstitialAdapter" and use "YOUR_PACKAGE_NAME.AppLovinInterstitialAdapter" as the custom event classname in the MoPub dashboard.
 public class AppLovinCustomEventInterstitial
         extends CustomEventInterstitial
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener

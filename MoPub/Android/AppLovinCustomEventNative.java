@@ -30,7 +30,9 @@ import static android.util.Log.ERROR;
  * @version 2.0
  */
 
-// Please note: We have renamed this class from "AppLovinNativeAdapter" to "AppLovinCustomEventNative", please make sure you have the appropriate class name in your MoPub account
+// Please note: We have renamed this class from "AppLovinNativeAdapter" to "AppLovinCustomEventNative".
+// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventNative" as the custom event classname in the MoPub dashboard.
+// If you have integrated this before, please rename this class back to "AppLovinNativeAdapter" and use "YOUR_PACKAGE_NAME.AppLovinNativeAdapter" as the custom event classname in the MoPub dashboard.
 public class AppLovinCustomEventNative
         extends CustomEventNative
         implements AppLovinNativeAdLoadListener

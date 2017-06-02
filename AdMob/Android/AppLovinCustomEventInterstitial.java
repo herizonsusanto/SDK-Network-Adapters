@@ -31,7 +31,9 @@ import static android.util.Log.ERROR;
  * @version 2.0
  */
 
-// Please note: We have renamed this class from "AdMobMediationInterEvent" to "AppLovinCustomEventInterstitial", please make sure you have the appropriate class name in your AdMob account
+// Please note: We have renamed this class from "AdMobMediationInterEvent" to "AppLovinCustomEventInterstitial".
+// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventInterstitial" as the custom event classname in the AdMob dashboard.
+// If you have integrated this before, please rename this class back to "AdMobMediationInterEvent" and use "YOUR_PACKAGE_NAME.AdMobMediationInterEvent" as the custom event classname in the AdMob dashboard.
 public class AppLovinCustomEventInterstitial
         implements CustomEventInterstitial, AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
 {

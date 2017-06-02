@@ -33,7 +33,9 @@ import static android.util.Log.ERROR;
  * @version 2.0
  */
 
-// Please note: We have renamed this class from "AppLovinRewardedAdapter" to "AppLovinCustomEventRewardedVideo", please make sure you have the appropriate class name in your MoPub account
+// Please note: We have renamed this class from "AppLovinRewardedAdapter" to "AppLovinCustomEventRewardedVideo".
+// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventRewardedVideo" as the custom event classname in the MoPub dashboard.
+// If you have integrated this before, please rename this class back to "AppLovinRewardedAdapter" and use "YOUR_PACKAGE_NAME.AppLovinRewardedAdapter" as the custom event classname in the MoPub dashboard.
 public class AppLovinCustomEventRewardedVideo
         extends CustomEventRewardedVideo
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
