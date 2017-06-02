@@ -18,6 +18,7 @@
 #endif
 
 @interface AppLovinBannerCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate>
+@property (nonatomic, strong) ALAdView *adView;
 @end
 
 @implementation AppLovinBannerCustomEvent
@@ -37,12 +38,10 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         [[ALSdk shared] setPluginVersion: @"MoPub-2.0"];
         
-        ALAdView *adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
-        adView.adLoadDelegate = self;
-        adView.adDisplayDelegate = self;
-        [adView loadNextAd];
-        
-        [self.delegate bannerCustomEvent: self didLoadAd: adView];
+        self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
+        self.adView.adLoadDelegate = self;
+        self.adView.adDisplayDelegate = self;
+        [self.adView loadNextAd];
     }
     else
     {
@@ -67,6 +66,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Banner did load ad: %@", ad.adIdNumber];
+    [self.delegate bannerCustomEvent: self didLoadAd: self.adView];
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
@@ -84,6 +84,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
 {
     [self log: @"Banner displayed"];
+    
+    // `didDisplayAd` of this class would not be called by MoPub on AppLovin banner refresh if enabled.
+    // Only way to track impression of AppLovin refresh is via this callback.
     [self.delegate trackImpression];
 }
 
