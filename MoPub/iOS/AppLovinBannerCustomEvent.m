@@ -39,8 +39,6 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         adView.adLoadDelegate = self;
         adView.adDisplayDelegate = self;
         [adView loadNextAd];
-        
-        [self.delegate bannerCustomEvent: self didLoadAd: adView];
     }
     else
     {
@@ -61,6 +59,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Banner did load ad: %@", ad.adIdNumber];
+    [self.delegate bannerCustomEvent: self didLoadAd: adView];
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
