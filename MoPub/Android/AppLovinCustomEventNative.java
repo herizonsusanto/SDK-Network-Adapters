@@ -190,7 +190,7 @@ public class AppLovinCustomEventNative
     {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinCustomEventNative", message );
+            Log.println( priority, "AppLovinNative", message );
         }
     }
 

@@ -157,7 +157,7 @@ public class AppLovinCustomEventBanner
     {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinCustomEventBanner", message );
+            Log.println( priority, "AppLovinBanner", message );
         }
     }
 

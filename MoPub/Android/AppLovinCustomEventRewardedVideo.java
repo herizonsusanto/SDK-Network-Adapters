@@ -256,7 +256,7 @@ public class AppLovinCustomEventRewardedVideo
     {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinCustomEventRewardedVideo", message );
+            Log.println( priority, "AppLovinRewardedVideo", message );
         }
     }
 

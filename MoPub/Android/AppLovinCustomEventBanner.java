@@ -182,7 +182,7 @@ public class AppLovinCustomEventBanner
     {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinCustomEventBanner", message + ( ( th == null ) ? "" : Log.getStackTraceString( th ) ) );
+            Log.println( priority, "AppLovinBanner", message + ( ( th == null ) ? "" : Log.getStackTraceString( th ) ) );
         }
     }
 

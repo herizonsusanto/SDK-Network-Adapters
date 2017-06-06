@@ -174,7 +174,7 @@ public class AppLovinCustomEventInterstitial
     {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinCustomEventInterstitial", message );
+            Log.println( priority, "AppLovinInterstitial", message );
         }
     }
 
