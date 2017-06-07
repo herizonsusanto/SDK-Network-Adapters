@@ -1,6 +1,8 @@
 package YOUR_PACKAGE_NAME;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
@@ -38,6 +40,7 @@ public class AppLovinCustomEventNative
         implements AppLovinNativeAdLoadListener
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final Handler uiHandler       = new Handler( Looper.getMainLooper() );
 
     private CustomEventNativeListener nativeListener;
     private Context                   context;
@@ -77,18 +80,25 @@ public class AppLovinCustomEventNative
 
         // Please note: If/when we add support for videos, we must use AppLovin SDK's built-in precaching mechanism
 
-        NativeImageHelper.preCacheImages( context, imageUrls, new NativeImageHelper.ImageListener()
+        runOnUiThread( new Runnable()
         {
             @Override
-            public void onImagesCached()
+            public void run()
             {
-                handleNativeAdFinishedCaching( nativeAd );
-            }
+                NativeImageHelper.preCacheImages( context, imageUrls, new NativeImageHelper.ImageListener()
+                {
+                    @Override
+                    public void onImagesCached()
+                    {
+                        handleNativeAdFinishedCaching( nativeAd );
+                    }
 
-            @Override
-            public void onImagesFailedToCache(NativeErrorCode nativeErrorCode)
-            {
-                handleNativeAdFinishedCaching( nativeAd );
+                    @Override
+                    public void onImagesFailedToCache(NativeErrorCode nativeErrorCode)
+                    {
+                        handleNativeAdFinishedCaching( nativeAd );
+                    }
+                } );
             }
         } );
     }
@@ -219,6 +229,21 @@ public class AppLovinCustomEventNative
         else
         {
             return NativeErrorCode.UNSPECIFIED;
+        }
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    public static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            uiHandler.post( runnable );
         }
     }
 }
