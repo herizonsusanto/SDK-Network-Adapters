@@ -3,6 +3,8 @@ package YOUR_PACKAGE_NAME;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinInterstitialAd;
@@ -38,6 +40,7 @@ public class AppLovinCustomEventInterstitial
         implements CustomEventInterstitial, AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final Handler uiHandler       = new Handler( Looper.getMainLooper() );
 
     private Context                         context;
     private CustomEventInterstitialListener listener;
@@ -111,14 +114,29 @@ public class AppLovinCustomEventInterstitial
 
         loadedAd = ad;
 
-        listener.onAdLoaded();
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                listener.onAdLoaded();
+            }
+        } );
     }
 
     @Override
     public void failedToReceiveAd(final int errorCode)
     {
         log( ERROR, "Interstitial failed to load with error: " + errorCode );
-        listener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
+
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                listener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
+            }
+        } );
     }
 
     //
@@ -191,6 +209,21 @@ public class AppLovinCustomEventInterstitial
         else
         {
             return AdRequest.ERROR_CODE_INTERNAL_ERROR;
+        }
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    public static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            uiHandler.post( runnable );
         }
     }
 }

@@ -3,6 +3,8 @@ package com.applovin.mediation.ApplovinAdapter;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinIncentivizedInterstitial;
@@ -38,6 +40,7 @@ public class ApplovinAdapter
         AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final Handler uiHandler       = new Handler( Looper.getMainLooper() );
 
     private boolean initialized;
 
@@ -137,14 +140,30 @@ public class ApplovinAdapter
     public void adReceived(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video did load ad: " + ad.getAdIdNumber() );
-        listener.onAdLoaded( this );
+
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                listener.onAdLoaded( ApplovinAdapter.this );
+            }
+        } );
     }
 
     @Override
     public void failedToReceiveAd(final int errorCode)
     {
         log( DEBUG, "Rewarded video failed to load with error: " + errorCode );
-        listener.onAdFailedToLoad( this, toAdMobErrorCode( errorCode ) );
+
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                listener.onAdFailedToLoad( ApplovinAdapter.this, toAdMobErrorCode( errorCode ) );
+            }
+        } );
     }
 
     //
@@ -156,7 +175,6 @@ public class ApplovinAdapter
     {
         log( DEBUG, "Rewarded video displayed" );
         listener.onAdOpened( this );
-
     }
 
     @Override
@@ -295,6 +313,21 @@ public class ApplovinAdapter
         public int getAmount()
         {
             return amount;
+        }
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    public static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            uiHandler.post( runnable );
         }
     }
 }
