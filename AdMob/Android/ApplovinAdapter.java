@@ -22,6 +22,7 @@ import com.google.android.gms.ads.reward.RewardItem;
 import com.google.android.gms.ads.reward.mediation.MediationRewardedVideoAdAdapter;
 import com.google.android.gms.ads.reward.mediation.MediationRewardedVideoAdListener;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 
 import static android.util.Log.DEBUG;
@@ -114,7 +115,33 @@ public class ApplovinAdapter
             fullyWatched = false;
             reward = null;
 
-            incentivizedInterstitial.show( context, null, this, this, this, this );
+            try
+            {
+                // AppLovin SDK < 7.2.0 uses an Activity, as opposed to Context in >= 7.2.0
+                final Class<?> contextClass = ( AppLovinSdk.VERSION_CODE < 720 ) ? Activity.class : Context.class;
+                final Method showMethod = AppLovinIncentivizedInterstitial.class.getMethod( "show",
+                                                                                            contextClass,
+                                                                                            String.class,
+                                                                                            AppLovinAdRewardListener.class,
+                                                                                            AppLovinAdVideoPlaybackListener.class,
+                                                                                            AppLovinAdDisplayListener.class,
+                                                                                            AppLovinAdClickListener.class );
+
+                try
+                {
+                    showMethod.invoke( incentivizedInterstitial, context, null, this, this, this, this );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to invoke show() method from AppLovinIncentivizedInterstitial." );
+                    listener.onAdFailedToLoad( this, AdRequest.ERROR_CODE_INTERNAL_ERROR );
+                }
+            }
+            catch ( Throwable th )
+            {
+                log( ERROR, "Unable to get show() method from AppLovinIncentivizedInterstitial." );
+                listener.onAdFailedToLoad( this, AdRequest.ERROR_CODE_INTERNAL_ERROR );
+            }
         }
         else
         {

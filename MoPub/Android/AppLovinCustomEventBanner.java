@@ -15,6 +15,7 @@ import com.applovin.sdk.AppLovinSdk;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
+import java.lang.reflect.Constructor;
 import java.util.Map;
 
 import static android.util.Log.DEBUG;
@@ -63,7 +64,7 @@ public class AppLovinCustomEventBanner
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
             sdk.setPluginVersion( "MoPub-2.0" );
 
-            final AppLovinAdView adView = new AppLovinAdView( adSize, context );
+            final AppLovinAdView adView = createAdView( adSize, context, customEventBannerListener );
             adView.setAdLoadListener( new AppLovinAdLoadListener()
             {
                 @Override
@@ -172,6 +173,27 @@ public class AppLovinCustomEventBanner
     //
     // Utility Methods
     //
+
+    private AppLovinAdView createAdView(final AppLovinAdSize size, final Context parentContext, final CustomEventBannerListener customEventBannerListener)
+    {
+        AppLovinAdView adView = null;
+
+        try
+        {
+            // AppLovin SDK < 7.1.0 uses an Activity, as opposed to Context in >= 7.1.0
+            final Class<?> contextClass = ( AppLovinSdk.VERSION_CODE < 710 ) ? Activity.class : Context.class;
+            final Constructor<?> constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, contextClass );
+
+            adView = (AppLovinAdView) constructor.newInstance( size, parentContext );
+        }
+        catch ( Throwable th )
+        {
+            log( ERROR, "Unable to get create AppLovinAdView." );
+            customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
+        }
+
+        return adView;
+    }
 
     private static void log(final int priority, final String message)
     {
