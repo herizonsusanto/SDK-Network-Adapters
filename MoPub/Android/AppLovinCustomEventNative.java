@@ -143,6 +143,25 @@ public class AppLovinCustomEventNative
         @Override
         public void prepare(@NonNull final View view)
         {
+            // PLEASE NOTE: Use the code below if you would like AppLovin to handle the ad clicks for you:
+            /*
+            final View.OnClickListener onClickListener = new View.OnClickListener()
+            {
+                @Override
+                public void onClick(View v)
+                {
+                    parentNativeAd.launchClickTarget( parentContext );
+                    notifyAdClicked();
+                }
+            };
+
+            parentView = view;
+            parentView.setOnClickListener( onClickListener );
+
+            // If you need to make subviews of the view clickable (e.g. CTA button), apply the click listener to them:
+            parentView.findViewById( R.id.ID_OF_SUBVIEW ).setOnClickListener( onClickListener );
+            */
+
             // As of AppLovin SDK >= 7.1.0, impression tracking convenience methods have been added to AppLovinNativeAd
             parentNativeAd.trackImpression( new AppLovinPostbackListener()
             {
@@ -157,24 +176,6 @@ public class AppLovinCustomEventNative
                 public void onPostbackFailure(String url, int errorCode)
                 {
                     log( ERROR, "Native ad impression failed to execute." );
-                }
-            } );
-        }
-
-        @Override
-        public void handleClick(@NonNull final View view)
-        {
-            super.handleClick( view );
-
-            // use the code below if you would like AppLovin to handle the ad clicks for you:
-            parentView = view;
-            parentView.setOnClickListener( new View.OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    parentNativeAd.launchClickTarget( parentContext );
-                    notifyAdClicked();
                 }
             } );
         }
