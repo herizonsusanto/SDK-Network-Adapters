@@ -67,9 +67,9 @@ public class AppLovinCustomEventNative
     //
 
     @Override
-    public void onNativeAdsLoaded(final List<AppLovinNativeAd> nativeAds)
+    public void onNativeAdsLoaded(final List nativeAds)
     {
-        final AppLovinNativeAd nativeAd = nativeAds.get( 0 );
+        final AppLovinNativeAd nativeAd = (AppLovinNativeAd) nativeAds.get( 0 );
 
         log( DEBUG, "Native ad did load ad: " + nativeAd.getAdId() );
 
@@ -117,7 +117,6 @@ public class AppLovinCustomEventNative
         log( ERROR, "Native ad video failed to load with error: " + errorCode );
         nativeListener.onNativeAdFailed( toMoPubErrorCode( errorCode ) );
     }
-
 
     private class AppLovinMopubNativeAd
             extends StaticNativeAd
