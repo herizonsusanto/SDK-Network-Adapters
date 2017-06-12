@@ -199,7 +199,7 @@ public class AppLovinCustomEventRewardedVideo
     //
 
     @Override
-    public void userOverQuota(final AppLovinAd appLovinAd, final Map<String, String> map)
+    public void userOverQuota(final AppLovinAd appLovinAd, final Map map)
     {
         log( ERROR, "Rewarded video validation request for ad did exceed quota with response: " + map );
     }
@@ -211,7 +211,7 @@ public class AppLovinCustomEventRewardedVideo
     }
 
     @Override
-    public void userRewardRejected(final AppLovinAd appLovinAd, final Map<String, String> map)
+    public void userRewardRejected(final AppLovinAd appLovinAd, final Map map)
     {
         log( ERROR, "Rewarded video validation request was rejected with response: " + map );
     }
@@ -224,10 +224,10 @@ public class AppLovinCustomEventRewardedVideo
     }
 
     @Override
-    public void userRewardVerified(final AppLovinAd appLovinAd, final Map<String, String> map)
+    public void userRewardVerified(final AppLovinAd appLovinAd, final Map map)
     {
-        final String currency = map.get( "currency" );
-        final int amount = (int) Double.parseDouble( map.get( "amount" ) ); // AppLovin returns amount as double
+        final String currency = (String) map.get( "currency" );
+        final int amount = (int) Double.parseDouble( (String) map.get( "amount" ) ); // AppLovin returns amount as double
 
         log( DEBUG, "Rewarded " + amount + " " + currency );
 
