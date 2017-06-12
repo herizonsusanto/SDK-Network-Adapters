@@ -15,6 +15,7 @@
 #endif
 
 @interface AppLovinCustomEventBanner()<ALAdLoadDelegate, ALAdDisplayDelegate>
+@property (nonatomic, strong) ALAdView *adView;
 @end
 
 @implementation AppLovinCustomEventBanner
@@ -37,10 +38,10 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         
         CGSize size = CGSizeFromGADAdSize(adSize);
         
-        ALAdView *adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: appLovinAdSize sdk: [ALSdk shared]];
-        adView.adLoadDelegate = self;
-        adView.adDisplayDelegate = self;
-        [adView loadNextAd];
+        self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: appLovinAdSize sdk: [ALSdk shared]];
+        self.adView.adLoadDelegate = self;
+        self.adView.adDisplayDelegate = self;
+        [self.adView loadNextAd];
     }
     else
     {
@@ -58,7 +59,7 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Banner did load ad: %@", ad.adIdNumber];
-    [self.delegate customEventBanner: self didReceiveAd: adView];
+    [self.delegate customEventBanner: self didReceiveAd: self.adView];
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
