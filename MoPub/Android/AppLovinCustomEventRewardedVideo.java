@@ -159,6 +159,7 @@ public class AppLovinCustomEventRewardedVideo
 
         if ( fullyWatched && reward != null )
         {
+            log( DEBUG, "Rewarded" + reward.getAmount() + " " + reward.getLabel() );
             MoPubRewardedVideoManager.onRewardedVideoCompleted( AppLovinCustomEventRewardedVideo.class, "", reward );
         }
 
@@ -229,7 +230,7 @@ public class AppLovinCustomEventRewardedVideo
         final String currency = (String) map.get( "currency" );
         final int amount = (int) Double.parseDouble( (String) map.get( "amount" ) ); // AppLovin returns amount as double
 
-        log( DEBUG, "Rewarded " + amount + " " + currency );
+        log( DEBUG, "Verified " + amount + " " + currency );
 
         reward = MoPubReward.success( currency, amount );
     }

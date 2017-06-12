@@ -211,6 +211,7 @@ public class ApplovinAdapter
 
         if ( fullyWatched && reward != null )
         {
+            log( DEBUG, "Rewarded " + reward.getAmount()+ " " + reward.getType() );
             listener.onRewarded( this, reward );
         }
 
@@ -283,7 +284,7 @@ public class ApplovinAdapter
         final String amountStr = (String) map.get( "amount" );
         final int amount = (int) Double.parseDouble( amountStr ); // AppLovin returns amount as double
 
-        log( DEBUG, "Rewarded " + amount + " " + currency );
+        log( DEBUG, "Verified " + amount + " " + currency );
 
         reward = new AppLovinRewardItem( amount, currency );
     }
