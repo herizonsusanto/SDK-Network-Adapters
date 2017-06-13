@@ -1,4 +1,4 @@
-package com.applovin.mediation.ApplovinAdapter;
+package com.applovin.mediation;
 
 import android.app.Activity;
 import android.content.Context;
