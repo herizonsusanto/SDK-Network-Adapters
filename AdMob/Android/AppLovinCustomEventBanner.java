@@ -19,20 +19,29 @@ import com.google.android.gms.ads.mediation.MediationAdRequest;
 import com.google.android.gms.ads.mediation.customevent.CustomEventBanner;
 import com.google.android.gms.ads.mediation.customevent.CustomEventBannerListener;
 
+import java.lang.reflect.Constructor;
+
+import static android.util.Log.DEBUG;
+import static android.util.Log.ERROR;
+
 /**
- * AppLovin Banner SDK Mediation for AdMob.
+ * AppLovin SDK banner adapter for AdMob.
  * <p>
  * Created by thomasso on 4/12/17.
  *
- * @version 1.0
+ * @version 2.0
  */
 
-public final class AppLovinCustomEventBanner
+public class AppLovinCustomEventBanner
         implements CustomEventBanner
 {
-    private static final String TAG = "AppLovinCustomEventBanner";
+    private static final boolean LOGGING_ENABLED = true;
 
     private AppLovinAdView adView;
+
+    //
+    // AdMob Custom Event Methods
+    //
 
     @Override
     public void requestBannerAd(final Context context, final CustomEventBannerListener customEventBannerListener, final String s, final AdSize adSize, final MediationAdRequest mediationAdRequest, final Bundle bundle)
@@ -40,46 +49,35 @@ public final class AppLovinCustomEventBanner
         // SDK versions BELOW 7.1.0 require a instance of an Activity to be passed in as the context
         if ( AppLovinSdk.VERSION_CODE < 710 && !( context instanceof Activity ) )
         {
-            Log.e( TAG, "Unable to request AppLovin banner. Invalid context provided." );
+            log( ERROR, "Unable to request AppLovin banner. Invalid context provided." );
             customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_INTERNAL_ERROR );
 
             return;
         }
 
-        Log.d( TAG, "Requesting AppLovin banner of size: " + adSize );
+        log( DEBUG, "Requesting AppLovin banner of size: " + adSize );
 
         final AppLovinAdSize appLovinAdSize = appLovinAdSizeFromAdMobAdSize( adSize );
         if ( appLovinAdSize != null )
         {
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-            sdk.setPluginVersion( "AdMobBanner-1.0" );
+            sdk.setPluginVersion( "AdMob-2.0" );
 
-            adView = new AppLovinAdView( appLovinAdSize, (Activity) context );
+            adView = createAdView( appLovinAdSize, context, customEventBannerListener );
             adView.setAdLoadListener( new AppLovinAdLoadListener()
             {
                 @Override
                 public void adReceived(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Successfully loaded banner ad" );
+                    log( DEBUG, "Successfully loaded banner ad" );
+                    customEventBannerListener.onAdLoaded( adView );
                 }
 
                 @Override
                 public void failedToReceiveAd(final int errorCode)
                 {
-                    Log.e( TAG, "Failed to load banner ad with code: " + errorCode );
-
-                    if ( errorCode == AppLovinErrorCodes.NO_FILL )
-                    {
-                        customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_NO_FILL );
-                    }
-                    else if ( errorCode == AppLovinErrorCodes.NO_NETWORK || errorCode == AppLovinErrorCodes.FETCH_AD_TIMEOUT )
-                    {
-                        customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_NETWORK_ERROR );
-                    }
-                    else
-                    {
-                        customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_INTERNAL_ERROR );
-                    }
+                    log( ERROR, "Failed to load banner ad with code: " + errorCode );
+                    customEventBannerListener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
                 }
             } );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
@@ -87,13 +85,13 @@ public final class AppLovinCustomEventBanner
                 @Override
                 public void adDisplayed(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Banner displayed" );
+                    log( DEBUG, "Banner displayed" );
                 }
 
                 @Override
                 public void adHidden(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Banner dismissed" );
+                    log( DEBUG, "Banner dismissed" );
                 }
             } );
             adView.setAdClickListener( new AppLovinAdClickListener()
@@ -101,20 +99,17 @@ public final class AppLovinCustomEventBanner
                 @Override
                 public void adClicked(final AppLovinAd ad)
                 {
-                    Log.d( TAG, "Banner clicked" );
+                    log( DEBUG, "Banner clicked" );
 
                     customEventBannerListener.onAdOpened();
                     customEventBannerListener.onAdLeftApplication();
                 }
             } );
             adView.loadNextAd();
-
-            customEventBannerListener.onAdLoaded( adView );
         }
         else
         {
-            Log.e( TAG, "Unable to request AppLovin banner" );
-
+            log( ERROR, "Unable to request AppLovin banner" );
             customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_INTERNAL_ERROR );
         }
     }
@@ -137,6 +132,31 @@ public final class AppLovinCustomEventBanner
         if ( adView != null ) adView.resume();
     }
 
+    //
+    // Utility Methods
+    //
+
+    private AppLovinAdView createAdView(final AppLovinAdSize size, final Context parentContext, final CustomEventBannerListener customEventBannerListener)
+    {
+        AppLovinAdView adView = null;
+
+        try
+        {
+            // AppLovin SDK < 7.1.0 uses an Activity, as opposed to Context in >= 7.1.0
+            final Class<?> contextClass = ( AppLovinSdk.VERSION_CODE < 710 ) ? Activity.class : Context.class;
+            final Constructor<?> constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, contextClass );
+
+            adView = (AppLovinAdView) constructor.newInstance( size, parentContext );
+        }
+        catch ( Throwable th )
+        {
+            log( ERROR, "Unable to get create AppLovinAdView." );
+            customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_INTERNAL_ERROR );
+        }
+
+        return adView;
+    }
+
     private AppLovinAdSize appLovinAdSizeFromAdMobAdSize(final AdSize adSize)
     {
         if ( AdSize.BANNER.equals( adSize ) )
@@ -153,5 +173,29 @@ public final class AppLovinCustomEventBanner
         }
 
         return null;
+    }
+
+    private static void log(final int priority, final String message)
+    {
+        if ( LOGGING_ENABLED )
+        {
+            Log.println( priority, "AppLovinBanner", message );
+        }
+    }
+
+    private static int toAdMobErrorCode(final int applovinErrorCode)
+    {
+        if ( applovinErrorCode == AppLovinErrorCodes.NO_FILL )
+        {
+            return AdRequest.ERROR_CODE_NO_FILL;
+        }
+        else if ( applovinErrorCode == AppLovinErrorCodes.NO_NETWORK || applovinErrorCode == AppLovinErrorCodes.FETCH_AD_TIMEOUT )
+        {
+            return AdRequest.ERROR_CODE_NETWORK_ERROR;
+        }
+        else
+        {
+            return AdRequest.ERROR_CODE_INTERNAL_ERROR;
+        }
     }
 }

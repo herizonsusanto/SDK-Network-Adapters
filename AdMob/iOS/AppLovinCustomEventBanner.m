@@ -6,15 +6,16 @@
 //
 //
 
+#import "AppLovinCustomEventBanner.h"
+
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
     #import "ALAdView.h"
 #endif
 
-#import "AppLovinCustomEventBanner.h"
-
 @interface AppLovinCustomEventBanner()<ALAdLoadDelegate, ALAdDisplayDelegate>
+@property (nonatomic, strong) ALAdView *adView;
 @end
 
 @implementation AppLovinCustomEventBanner
@@ -22,6 +23,8 @@
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
+
+#pragma mark - GADCustomEventBanner Protocol
 
 - (void)requestBannerAd:(GADAdSize)adSize parameter:(NSString *)serverParameter label:(NSString *)serverLabel request:(GADCustomEventRequest *)request
 {
@@ -31,22 +34,22 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     ALAdSize *appLovinAdSize = [self appLovinAdSizeFromRequestedSize: adSize];
     if ( appLovinAdSize )
     {
-        [[ALSdk shared] setPluginVersion: @"AdMobBanner-1.0"];
+        [[ALSdk shared] setPluginVersion: @"AdMob-2.0"];
         
         CGSize size = CGSizeFromGADAdSize(adSize);
         
-        ALAdView *adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: appLovinAdSize sdk: [ALSdk shared]];
-        adView.adLoadDelegate = self;
-        adView.adDisplayDelegate = self;
-        [adView loadNextAd];
-        
-        [self.delegate customEventBanner: self didReceiveAd: adView];
+        self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: appLovinAdSize sdk: [ALSdk shared]];
+        self.adView.adLoadDelegate = self;
+        self.adView.adDisplayDelegate = self;
+        [self.adView loadNextAd];
     }
     else
     {
         [self log: @"Failed to create an AppLovin Banner with invalid size"];
         
-        NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain code: kALErrorCodeUnableToRenderAd userInfo: nil];
+        NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                             code: kGADErrorMediationInvalidAdSize
+                                         userInfo: nil];
         [self.delegate customEventBanner: self didFailAd: error];
     }
 }
@@ -56,13 +59,16 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Banner did load ad: %@", ad.adIdNumber];
+    [self.delegate customEventBanner: self didReceiveAd: self.adView];
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
 {
     [self log: @"Banner failed to load with error: %d", code];
     
-    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain code: code userInfo: nil];
+    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                         code: [self toAdMobErrorCode: code]
+                                     userInfo: nil];
     [self.delegate customEventBanner: self didFailAd: error];
 }
 
@@ -116,6 +122,30 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         va_end(valist);
         
         NSLog(@"AppLovinCustomEventBanner: %@", message);
+    }
+}
+
+- (GADErrorCode)toAdMobErrorCode:(int)appLovinErrorCode
+{
+    if ( appLovinErrorCode == kALErrorCodeNoFill )
+    {
+        return kGADErrorMediationNoFill;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeAdRequestNetworkTimeout )
+    {
+        return kGADErrorTimeout;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeInvalidResponse )
+    {
+        return kGADErrorReceivedInvalidResponse;
+    }
+    else if ( appLovinErrorCode == kALErrorCodeUnableToRenderAd )
+    {
+        return kGADErrorServerError;
+    }
+    else
+    {
+        return kGADErrorInternalError;
     }
 }
 

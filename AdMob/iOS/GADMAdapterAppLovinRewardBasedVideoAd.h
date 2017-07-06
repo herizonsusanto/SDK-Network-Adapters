@@ -1,15 +1,13 @@
-#import <Foundation/Foundation.h>
-#import <GoogleMobileAds/GoogleMobileAds.h>
+//
+//  GADMAdapterAppLovinRewardBasedVideoAd.h
+//
+//
+//  Created by Thomas So on 5/20/17.
+//
+//
 
-//  For some older versions of AdMob iOS SDK, you would also need to add the header files from the "Mediation Adapters" folder, coming with the SDK, into your Xcode project, and to use the import below
-//#import "GADMRewardBasedVideoAdNetworkAdapterProtocol.h"
+@import GoogleMobileAds;
 
-@interface GADMAdapterAppLovinRewardBasedVideoAd : NSObject<GADMRewardBasedVideoAdNetworkAdapter>
-
-@end
-
-@interface GADMExtrasAppLovin : NSObject<GADAdNetworkExtras>
-
-@property(nonatomic, assign) NSUInteger requestNumber;
+@interface GADMAdapterAppLovinRewardBasedVideoAd : NSObject <GADMRewardBasedVideoAdNetworkAdapter>
 
 @end
