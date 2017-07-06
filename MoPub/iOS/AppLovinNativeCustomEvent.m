@@ -55,20 +55,20 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 #pragma mark - Ad Load Delegate
 
-- (void)nativeAdService:(ALNativeAdService *)service didLoadAds:(NSArray al_of_type(<ALNativeAd *>) *)ads
+- (void)nativeAdService:(ALNativeAdService *)service didLoadAds:(NSArray<ALNativeAd *> *)ads
 {
     ALNativeAd *nativeAd = [ads firstObject];
     
     [[self class] log: @"Native ad did load ad: %@", nativeAd.adIdNumber];
     
-    NSMutableArray al_of_type(<NSURL *>) *imageURLs = [NSMutableArray arrayWithCapacity: 2];
+    NSMutableArray<NSURL *> *imageURLs = [NSMutableArray arrayWithCapacity: 2];
     
     if ( nativeAd.iconURL ) [imageURLs addObject: nativeAd.iconURL];
     if ( nativeAd.imageURL ) [imageURLs addObject: nativeAd.imageURL];
     
     // Please note: If/when we add support for videos, we must use AppLovin SDK's built-in precaching mechanism
     
-    [self precacheImagesWithURLs: imageURLs completionBlock:^(NSArray al_of_type(<NSError *>) *errors)
+    [self precacheImagesWithURLs: imageURLs completionBlock:^(NSArray<NSError *> *errors)
      {
          [[self class] log: @"Native ad done precaching"];
          
@@ -121,7 +121,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         self.nativeAd = ad;
         
-        NSMutableDictionary al_of_type(<NSString *, NSString *>) *properties = [NSMutableDictionary dictionary];
+        NSMutableDictionary<NSString *, NSString *> *properties = [NSMutableDictionary dictionary];
         properties[kAdTitleKey] = ad.title;
         properties[kAdTextKey] = ad.descriptionText;
         properties[kAdIconImageKey] = ad.iconURL.absoluteString;
