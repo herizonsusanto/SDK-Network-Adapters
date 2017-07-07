@@ -18,6 +18,7 @@ import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.mediation.MediationAdRequest;
+import com.google.android.gms.ads.mediation.OnContextChangedListener;
 import com.google.android.gms.ads.reward.RewardItem;
 import com.google.android.gms.ads.reward.mediation.MediationRewardedVideoAdAdapter;
 import com.google.android.gms.ads.reward.mediation.MediationRewardedVideoAdListener;
@@ -37,7 +38,7 @@ import static android.util.Log.ERROR;
  */
 
 public class ApplovinAdapter
-        implements MediationRewardedVideoAdAdapter,
+        implements MediationRewardedVideoAdAdapter, OnContextChangedListener,
         AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
     private static final boolean LOGGING_ENABLED = true;
@@ -159,6 +160,16 @@ public class ApplovinAdapter
     @Override
     public void onDestroy() {}
 
+    @Override
+    public void onContextChanged(final Context context)
+    {
+        if ( context != null )
+        {
+            log( DEBUG, "Context changed: " + context );
+            this.context = context;
+        }
+    }
+
     //
     // Ad Load Listener
     //
@@ -211,7 +222,7 @@ public class ApplovinAdapter
 
         if ( fullyWatched && reward != null )
         {
-            log( DEBUG, "Rewarded " + reward.getAmount()+ " " + reward.getType() );
+            log( DEBUG, "Rewarded " + reward.getAmount() + " " + reward.getType() );
             listener.onRewarded( this, reward );
         }
 
