@@ -78,7 +78,6 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
          [self.delegate nativeCustomEvent: self didLoadAd: nativeAd];
          
          [adapter willAttachToView: nil];
-         [adapter displayContentForURL: nil rootViewController: [UIApplication sharedApplication].keyWindow.rootViewController];
      }];
 }
 
@@ -111,6 +110,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 @implementation AppLovinNativeAdapter
 @synthesize defaultActionURL;
+@synthesize delegate;
 
 #pragma mark - Initialization
 
