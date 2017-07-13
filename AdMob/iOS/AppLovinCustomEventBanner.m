@@ -96,7 +96,9 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(GADAdSize)size
 {
-    if  ( GADAdSizeEqualToSize(kGADAdSizeBanner, size ) )
+    if ( GADAdSizeEqualToSize(kGADAdSizeBanner, size ) || GADAdSizeEqualToSize(kGADAdSizeFullBanner, size ) ||
+        GADAdSizeEqualToSize(kGADAdSizeLargeBanner, size ) || GADAdSizeEqualToSize(kGADAdSizeSmartBannerPortrait, size ) ||
+        GADAdSizeEqualToSize(kGADAdSizeSmartBannerLandscape, size ) )
     {
         return [ALAdSize sizeBanner];
     }
