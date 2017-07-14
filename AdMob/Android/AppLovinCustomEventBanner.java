@@ -159,7 +159,7 @@ public class AppLovinCustomEventBanner
 
     private AppLovinAdSize appLovinAdSizeFromAdMobAdSize(final AdSize adSize)
     {
-        if ( AdSize.BANNER.equals( adSize ) || AdSize.SMART_BANNER.equals( adSize ) || AdSize.FULL_BANNER.equals( adSize ) || AdSize.LARGE_BANNER.equals( adSize ) )
+        if ( AdSize.BANNER.equals( adSize ) || AdSize.LARGE_BANNER.equals( adSize ) )
         {
             return AppLovinAdSize.BANNER;
         }
