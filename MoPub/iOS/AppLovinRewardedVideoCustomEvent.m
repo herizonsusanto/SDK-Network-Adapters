@@ -1,78 +1,46 @@
+//
+//  AppLovinRewardedVideoCustomEvent.m
+//
+//
+//  Created by Thomas So on 5/21/17.
+//
+//
 
-//
-//  GADMAdapterAppLovinRewardBasedVideoAd.m
-//
-//
-//  Created by Thomas So on 5/20/17.
-//
-//
-
-#import "GADMAdapterAppLovinRewardBasedVideoAd.h"
+#import "AppLovinRewardedVideoCustomEvent.h"
+#import "MPRewardedVideoReward.h"
+#import "MPError.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
-    #import "ALSdk.h"
     #import "ALIncentivizedInterstitialAd.h"
 #endif
 
-@interface GADMAdapterAppLovinRewardBasedVideoAd() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
+@interface AppLovinRewardedVideoCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
 
 @property (nonatomic, assign) BOOL fullyWatched;
-@property (nonatomic, strong) GADAdReward *reward;
-
-@property (nonatomic,   weak) id<GADMRewardBasedVideoAdNetworkConnector> connector;
+@property (nonatomic, strong) MPRewardedVideoReward *reward;
 
 @end
 
-@implementation GADMAdapterAppLovinRewardBasedVideoAd
+@implementation AppLovinRewardedVideoCustomEvent
 
 static const BOOL kALLoggingEnabled = YES;
-static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
-static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
+static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
-#pragma mark - GADMRewardBasedVideoAdNetworkAdapter Protocol
+#pragma mark - MPRewardedVideoCustomEvent Overridden Methods
 
-+ (NSString *)adapterVersion
+- (void)requestRewardedVideoWithCustomEventInfo:(NSDictionary *)info
 {
-    return kALAdMobAdapterVersion;
-}
-
-+ (Class<GADAdNetworkExtras>)networkExtrasClass
-{
-    return nil;
-}
-
-- (instancetype)initWithRewardBasedVideoAdNetworkConnector:(id<GADMRewardBasedVideoAdNetworkConnector>)connector
-{
-    self = [super init];
-    if ( self )
+    [self log: @"Requesting AppLovin rewarded video with info: %@", info];
+    
+    [[ALSdk shared] setPluginVersion: @"MoPub-2.0"];
+    
+    if ( [self hasAdAvailable] )
     {
-        self.connector = connector;
-    }
-    return self;
-}
-
-- (void)setUp
-{
-    [[ALSdk shared] initializeSdk];
-    [[ALSdk shared] setPluginVersion: kALAdMobAdapterVersion];
-    
-    [self.connector adapterDidSetUpRewardBasedVideoAd: self];
-}
-
-- (void)requestRewardBasedVideoAd
-{
-    [self log: @"Requesting AppLovin rewarded video"];
-    
-    NSString *adapterVersion = [[self class] adapterVersion];
-    [[ALSdk shared] setPluginVersion: adapterVersion];
-    
-    if ( self.incent.readyForDisplay )
-    {
-        [self.connector adapterDidReceiveRewardBasedVideoAd: self];
+        [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
     }
     else
     {
@@ -80,9 +48,14 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
     }
 }
 
-- (void)presentRewardBasedVideoAdWithRootViewController:(UIViewController *)viewController
+- (BOOL)hasAdAvailable
 {
-    if ( self.incent.readyForDisplay )
+    return self.incent.readyForDisplay;
+}
+
+- (void)presentRewardedVideoFromViewController:(UIViewController *)viewController
+{
+    if ( [self hasAdAvailable] )
     {
         self.reward = nil;
         self.fullyWatched = NO;
@@ -93,35 +66,33 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
     {
         [self log: @"Failed to show an AppLovin rewarded video before one was loaded"];
         
-        NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+        NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
                                          userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
         
-        [self.connector adapter: self didFailToSetUpRewardBasedVideoAdWithError: error];
+        [self.delegate rewardedVideoDidFailToPlayForCustomEvent: self error: error];
     }
 }
 
-- (void)stopBeingDelegate
-{
-    self.connector = nil;
-}
+- (void)handleCustomEventInvalidated { }
+- (void)handleAdPlayedForCustomEventNetwork { }
 
 #pragma mark - Ad Load Delegate
 
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
-    [self.connector adapterDidReceiveRewardBasedVideoAd: self];
+    [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
 {
     [self log: @"Rewarded video failed to load with error: %d", code];
     
-    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
-                                         code: [self toAdMobErrorCode: code]
-                                     userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
-    [self.connector adapter: self didFailToLoadRewardBasedVideoAdwithError: error];
+    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                         code: [self toMoPubErrorCode: code]
+                                     userInfo: nil];
+    [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent: self error: error];
 }
 
 #pragma mark - Ad Display Delegate
@@ -129,7 +100,9 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
 - (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
 {
     [self log: @"Rewarded video displayed"];
-    [self.connector adapterDidOpenRewardBasedVideoAd: self];
+    
+    [self.delegate rewardedVideoWillAppearForCustomEvent: self];
+    [self.delegate rewardedVideoDidAppearForCustomEvent: self];
 }
 
 - (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
@@ -138,33 +111,31 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
     
     if ( self.fullyWatched && self.reward )
     {
-        [self.connector adapter: self didRewardUserWithReward: self.reward];
+        [self.delegate rewardedVideoShouldRewardUserForCustomEvent: self reward: self.reward];
     }
     
-    [self.connector adapterDidCloseRewardBasedVideoAd: self];
+    [self.delegate rewardedVideoWillDisappearForCustomEvent: self];
+    [self.delegate rewardedVideoDidDisappearForCustomEvent: self];
 }
 
 - (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
 {
     [self log: @"Rewarded video clicked"];
     
-    [self.connector adapterDidGetAdClick: self];
-    [self.connector adapterWillLeaveApplication: self];
+    [self.delegate rewardedVideoDidReceiveTapEventForCustomEvent: self];
+    [self.delegate rewardedVideoWillLeaveApplicationForCustomEvent: self];
 }
 
 #pragma mark - Video Playback Delegate
 
 - (void)videoPlaybackBeganInAd:(ALAd *)ad
 {
-    [self log: @"Interstitial video playback began"];
-    [self.connector adapterDidStartPlayingRewardBasedVideoAd: self];
+    [self log: @"Rewarded video video playback began"];
 }
 
 - (void)videoPlaybackEndedInAd:(ALAd *)ad atPlaybackPercent:(NSNumber *)percentPlayed fullyWatched:(BOOL)wasFullyWatched
 {
-    [self log: @"Interstitial video playback ended at playback percent: %lu", percentPlayed.unsignedIntegerValue];
-    
-    self.fullyWatched = wasFullyWatched;
+    [self log: @"Rewarded video video playback ended at playback percent: %lu", percentPlayed.unsignedIntegerValue];
 }
 
 #pragma mark - Reward Delegate
@@ -187,16 +158,19 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
 - (void)userDeclinedToViewAd:(ALAd *)ad
 {
     [self log: @"User declined to view rewarded video"];
+    
+    [self.delegate rewardedVideoWillDisappearForCustomEvent: self];
+    [self.delegate rewardedVideoDidDisappearForCustomEvent: self];
 }
 
 - (void)rewardValidationRequestForAd:(ALAd *)ad didSucceedWithResponse:(NSDictionary *)response
 {
-    NSDecimalNumber *amount = [NSDecimalNumber decimalNumberWithString: response[@"amount"]];
+    NSNumber *amount = response[@"amount"];
     NSString *currency = response[@"currency"];
     
     [self log: @"Rewarded %@ %@", amount, currency];
     
-    self.reward = [[GADAdReward alloc] initWithRewardType: currency rewardAmount: amount];
+    self.reward = [[MPRewardedVideoReward alloc] initWithCurrencyType: currency amount: amount];
 }
 
 #pragma mark - Incentivized Interstitial
@@ -224,31 +198,27 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
         NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
         va_end(valist);
         
-        NSLog(@"AppLovinCustomEventRewardedVideo: %@", message);
+        NSLog(@"AppLovinRewardedVideoCustomEvent: %@", message);
     }
 }
 
-- (GADErrorCode)toAdMobErrorCode:(int)appLovinErrorCode
+- (MOPUBErrorCode)toMoPubErrorCode:(int)appLovinErrorCode
 {
     if ( appLovinErrorCode == kALErrorCodeNoFill )
     {
-        return kGADErrorMediationNoFill;
+        return MOPUBErrorAdapterHasNoInventory;
     }
     else if ( appLovinErrorCode == kALErrorCodeAdRequestNetworkTimeout )
     {
-        return kGADErrorTimeout;
+        return MOPUBErrorNetworkTimedOut;
     }
     else if ( appLovinErrorCode == kALErrorCodeInvalidResponse )
     {
-        return kGADErrorReceivedInvalidResponse;
-    }
-    else if ( appLovinErrorCode == kALErrorCodeUnableToRenderAd )
-    {
-        return kGADErrorServerError;
+        return MOPUBErrorServerError;
     }
     else
     {
-        return kGADErrorInternalError;
+        return MOPUBErrorUnknown;
     }
 }
 

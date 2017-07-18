@@ -1,11 +1,13 @@
-#import <Foundation/Foundation.h>
+//
+//  GADMAdapterAppLovinRewardBasedVideoAd.h
+//
+//
+//  Created by Thomas So on 5/20/17.
+//
+//
 
-#import "GADMRewardBasedVideoAdNetworkAdapterProtocol.h"
+@import GoogleMobileAds;
 
-@interface GADMAdapterAppLovinRewardBasedVideoAd : NSObject<GADMRewardBasedVideoAdNetworkAdapter>
+@interface GADMAdapterAppLovinRewardBasedVideoAd : NSObject <GADMRewardBasedVideoAdNetworkAdapter>
 
-@end
-
-@interface GADMExtrasAppLovin : NSObject<GADAdNetworkExtras>
-@property(nonatomic, assign) NSUInteger requestNumber;
 @end

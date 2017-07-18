@@ -1,15 +1,13 @@
 //
-// AppLovin <--> MoPub Network Adaptors
+//  AppLovinInterstitialCustomEvent.h
+//
+//
+//  Created by Thomas So on 5/21/17.
+//
 //
 
 #import "MPInterstitialCustomEvent.h"
 
-#import "ALInterstitialAd.h"
-#import "ALAdService.h"
-
-@interface AppLovinInterstitialCustomEvent : MPInterstitialCustomEvent <ALAdLoadDelegate, ALAdDisplayDelegate>
-
-@property (strong, nonatomic) ALInterstitialAd* interstitialAd;
-@property (strong, nonatomic) ALAd* loadedAd;
+@interface AppLovinInterstitialCustomEvent : MPInterstitialCustomEvent
 
 @end

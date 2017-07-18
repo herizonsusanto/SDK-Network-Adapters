@@ -10,25 +10,25 @@ For Interstitials integration, add the files AppLovinCustomEventInter.h and AppL
 
 Unity Integration
 ====================
-Our Unity adapter does not include our sdk as framework but as a library with header files. Therefore, you would need to edit the import statements of the adapters:
+Our Unity adapter does not include our SDK as framework but as a library (`.a` binary) with header files. Therefore, you need to edit the import statements:
 
-1.Comment out the framework import statement, i.e.:
+1.Comment out framework import statements, i.e.:
 
 Replace:
 
-\#import \<AppLovinSDK/AppLovinSDK.h>
+`#import <AppLovinSDK/AppLovinSDK.h>`
 
 With:
 
-//\#import \<AppLovinSDK/AppLovinSDK.h>
+`//#import <AppLovinSDK/AppLovinSDK.h>`
 
 
 2.Uncomment all commented direct header import statements, for example:
 
 Replace:
 
-//\#import "ALInterstitialAd.h"
+`//#import "ALInterstitialAd.h"`
 
 With:
 
-\#import "ALInterstitialAd.h"
+`#import "ALInterstitialAd.h"`

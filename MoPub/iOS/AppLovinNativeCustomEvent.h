@@ -1,18 +1,13 @@
 //
-// AppLovin <--> MoPub Network Adaptors
+//  AppLovinNativeCustomEvent.h
+//
+//
+//  Created by Thomas So on 5/21/17.
+//
 //
 
-#import "MPInterstitialCustomEvent.h"
-
 #import "MPNativeCustomEvent.h"
-#import "ALNativeAdLoadDelegate.h"
-#import "ALNativeAdPrecacheDelegate.h"
-#import "AppLovinNativeAdapter.h"
-#import "MPNativeAd.h"
 
-@interface AppLovinNativeCustomEvent : MPNativeCustomEvent <ALNativeAdLoadDelegate>
+@interface AppLovinNativeCustomEvent : MPNativeCustomEvent
 
-@property (strong, nonatomic) ALNativeAd* lastAd;
-@property (strong, nonatomic) AppLovinNativeAdapter* nativeAdapter;
-+ (void)ALLog:(NSString *)logMessage;
 @end
