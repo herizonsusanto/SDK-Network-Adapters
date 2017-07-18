@@ -136,6 +136,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (void)videoPlaybackEndedInAd:(ALAd *)ad atPlaybackPercent:(NSNumber *)percentPlayed fullyWatched:(BOOL)wasFullyWatched
 {
     [self log: @"Rewarded video video playback ended at playback percent: %lu", percentPlayed.unsignedIntegerValue];
+    
+    self.fullyWatched = wasFullyWatched;
 }
 
 #pragma mark - Reward Delegate
