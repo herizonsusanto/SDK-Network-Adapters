@@ -31,7 +31,7 @@
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
-static NSString *const kALAdMobAdapterVersion = @"AdMob-2.0";
+static NSString *const kALAdMobAdapterVersion = @"AdMob-2.2";
 
 #pragma mark - GADMRewardBasedVideoAdNetworkAdapter Protocol
 
