@@ -182,8 +182,10 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     if ( !_incent )
     {
         _incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
-        _incent.adVideoPlaybackDelegate = self;
-        _incent.adDisplayDelegate = self;
+        
+        __weak typeof(self) weakSelf = self;
+        _incent.adVideoPlaybackDelegate = weakSelf;
+        _incent.adDisplayDelegate = weakSelf;
     }
     
     return _incent;
