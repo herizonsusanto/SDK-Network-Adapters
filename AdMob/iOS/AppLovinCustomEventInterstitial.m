@@ -45,8 +45,11 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     if ( self.loadedAd )
     {
         self.interstitialAd = [[ALInterstitialAd alloc] initWithSdk: [ALSdk shared]];
-        self.interstitialAd.adDisplayDelegate = self;
-        self.interstitialAd.adVideoPlaybackDelegate = self;
+        
+        __weak typeof(self) weakSelf = self;
+        
+        self.interstitialAd.adDisplayDelegate = weakSelf;
+        self.interstitialAd.adVideoPlaybackDelegate = weakSelf;
         [self.interstitialAd showOver: rootViewController.view.window andRender: self.loadedAd];
     }
     else
