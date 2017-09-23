@@ -44,11 +44,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     if ( self.loadedAd )
     {
         self.interstitialAd = [[ALInterstitialAd alloc] initWithSdk: [ALSdk shared]];
-        
-        __weak typeof(self) weakSelf = self;
-        self.interstitialAd.adDisplayDelegate = weakSelf;
-        self.interstitialAd.adVideoPlaybackDelegate = weakSelf;
-        
+        self.interstitialAd.adDisplayDelegate = self;
+        self.interstitialAd.adVideoPlaybackDelegate = self;
         [self.interstitialAd showOver: rootViewController.view.window andRender: self.loadedAd];
     }
     else
@@ -100,6 +97,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     [self.delegate interstitialCustomEventWillDisappear: self];
     [self.delegate interstitialCustomEventDidDisappear: self];
+    
+    self.interstitialAd = nil;
 }
 
 - (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view

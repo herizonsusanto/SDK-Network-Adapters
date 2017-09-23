@@ -142,6 +142,8 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.2";
     }
     
     [self.connector adapterDidCloseRewardBasedVideoAd: self];
+    
+    self.incent = nil;
 }
 
 - (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
@@ -206,11 +208,8 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.2";
     if ( !_incent )
     {
         _incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
-        
-        __weak typeof(self) weakSelf = self;
-        
-        _incent.adVideoPlaybackDelegate = weakSelf;
-        _incent.adDisplayDelegate = weakSelf;
+        _incent.adVideoPlaybackDelegate = self;
+        _incent.adDisplayDelegate = self;
     }
     
     return _incent;

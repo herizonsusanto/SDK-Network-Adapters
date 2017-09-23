@@ -39,11 +39,8 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         CGSize size = CGSizeFromGADAdSize(adSize);
         
         self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: appLovinAdSize sdk: [ALSdk shared]];
-        
-        __weak typeof(self) weakSelf = self;
-        self.adView.adLoadDelegate = weakSelf;
-        self.adView.adDisplayDelegate = weakSelf;
-        
+        self.adView.adLoadDelegate = self;
+        self.adView.adDisplayDelegate = self;
         [self.adView loadNextAd];
     }
     else

@@ -39,11 +39,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         [[ALSdk shared] setPluginVersion: @"MoPub-2.1"];
         
         self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
-        
-        __weak typeof(self) weakSelf = self;
-        self.adView.adLoadDelegate = weakSelf;
-        self.adView.adDisplayDelegate = weakSelf;
-        
+        self.adView.adLoadDelegate = self;
+        self.adView.adDisplayDelegate = self;
         [self.adView loadNextAd];
     }
     else
