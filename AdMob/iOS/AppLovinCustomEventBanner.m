@@ -34,7 +34,7 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     ALAdSize *appLovinAdSize = [self appLovinAdSizeFromRequestedSize: adSize];
     if ( appLovinAdSize )
     {
-        [[ALSdk shared] setPluginVersion: @"AdMob-2.2"];
+        [[ALSdk shared] setPluginVersion: @"AdMob-2.3"];
         
         CGSize size = CGSizeFromGADAdSize(adSize);
         
