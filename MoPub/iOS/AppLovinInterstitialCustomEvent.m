@@ -33,7 +33,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Requesting AppLovin interstitial with info: %@", info];
     
-    [[ALSdk shared] setPluginVersion: @"MoPub-2.1"];
+    [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
     
     ALAdService *adService = [ALSdk shared].adService;
     [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];

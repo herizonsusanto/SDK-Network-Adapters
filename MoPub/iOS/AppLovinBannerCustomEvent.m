@@ -36,7 +36,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
     if ( adSize )
     {
-        [[ALSdk shared] setPluginVersion: @"MoPub-2.1"];
+        [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
         
         self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
         self.adView.adLoadDelegate = self;
