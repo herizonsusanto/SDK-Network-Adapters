@@ -79,7 +79,7 @@ public class AppLovinCustomEventRewardedVideo
 
         if ( hasVideoAvailable() )
         {
-            MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( AppLovinCustomEventRewardedVideo.class, "" );
+            MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( this.getClass(), "" );
         }
         else
         {
@@ -100,7 +100,7 @@ public class AppLovinCustomEventRewardedVideo
         else
         {
             log( ERROR, "Failed to show an AppLovin rewarded video before one was loaded" );
-            MoPubRewardedVideoManager.onRewardedVideoPlaybackError( AppLovinCustomEventRewardedVideo.class, "", MoPubErrorCode.VIDEO_PLAYBACK_ERROR );
+            MoPubRewardedVideoManager.onRewardedVideoPlaybackError( this.getClass(), "", MoPubErrorCode.VIDEO_PLAYBACK_ERROR );
         }
     }
 
@@ -129,14 +129,14 @@ public class AppLovinCustomEventRewardedVideo
     public void adReceived(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video did load ad: " + ad.getAdIdNumber() );
-        MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( AppLovinCustomEventRewardedVideo.class, "" );
+        MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( this.getClass(), "" );
     }
 
     @Override
     public void failedToReceiveAd(final int errorCode)
     {
         log( DEBUG, "Rewarded video failed to load with error: " + errorCode );
-        MoPubRewardedVideoManager.onRewardedVideoLoadFailure( AppLovinCustomEventRewardedVideo.class, "", toMoPubErrorCode( errorCode ) );
+        MoPubRewardedVideoManager.onRewardedVideoLoadFailure( this.getClass(), "", toMoPubErrorCode( errorCode ) );
     }
 
     //
@@ -147,7 +147,7 @@ public class AppLovinCustomEventRewardedVideo
     public void adDisplayed(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video displayed" );
-        MoPubRewardedVideoManager.onRewardedVideoStarted( AppLovinCustomEventRewardedVideo.class, "" );
+        MoPubRewardedVideoManager.onRewardedVideoStarted( this.getClass(), "" );
     }
 
     @Override
@@ -158,10 +158,10 @@ public class AppLovinCustomEventRewardedVideo
         if ( fullyWatched && reward != null )
         {
             log( DEBUG, "Rewarded" + reward.getAmount() + " " + reward.getLabel() );
-            MoPubRewardedVideoManager.onRewardedVideoCompleted( AppLovinCustomEventRewardedVideo.class, "", reward );
+            MoPubRewardedVideoManager.onRewardedVideoCompleted( this.getClass(), "", reward );
         }
 
-        MoPubRewardedVideoManager.onRewardedVideoClosed( AppLovinCustomEventRewardedVideo.class, "" );
+        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
     }
 
     //
@@ -172,7 +172,7 @@ public class AppLovinCustomEventRewardedVideo
     public void adClicked(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video clicked" );
-        MoPubRewardedVideoManager.onRewardedVideoClicked( AppLovinCustomEventRewardedVideo.class, "" );
+        MoPubRewardedVideoManager.onRewardedVideoClicked( this.getClass(), "" );
     }
 
     //
