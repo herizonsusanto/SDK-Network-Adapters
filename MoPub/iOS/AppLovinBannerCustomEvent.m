@@ -17,7 +17,15 @@
     #import "ALAdView.h"
 #endif
 
-@interface AppLovinBannerCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate>
+/**
+ * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
+ */
+@interface AppLovinBannerDelegate : NSObject<ALAdDisplayDelegate, ALAdLoadDelegate>
+@property (nonatomic, weak) AppLovinBannerCustomEvent *parentCustomEvent;
+- (instancetype)initWithCustomEvent:(AppLovinBannerCustomEvent *)parentCustomEvent;
+@end
+
+@interface AppLovinBannerCustomEvent()
 @property (nonatomic, strong) ALAdView *adView;
 @end
 
@@ -39,8 +47,11 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
         
         self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
-        self.adView.adLoadDelegate = self;
-        self.adView.adDisplayDelegate = self;
+        
+        AppLovinBannerDelegate *delegate = [[AppLovinBannerDelegate alloc] initWithCustomEvent: self];
+        self.adView.adLoadDelegate = delegate;
+        self.adView.adDisplayDelegate = delegate;
+        
         [self.adView loadNextAd];
     }
     else
@@ -59,48 +70,6 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (BOOL)enableAutomaticImpressionAndClickTracking
 {
     return NO;
-}
-
-#pragma mark - Ad Load Delegate
-
-- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
-{
-    [self log: @"Banner did load ad: %@", ad.adIdNumber];
-    [self.delegate bannerCustomEvent: self didLoadAd: self.adView];
-}
-
-- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
-{
-    [self log: @"Banner failed to load with error: %d", code];
-    
-    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
-                                         code: [self toMoPubErrorCode: code]
-                                     userInfo: nil];
-    [self.delegate bannerCustomEvent: self didFailToLoadAdWithError: error];
-}
-
-#pragma mark - Ad Display Delegate
-
-- (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
-{
-    [self log: @"Banner displayed"];
-    
-    // `didDisplayAd` of this class would not be called by MoPub on AppLovin banner refresh if enabled.
-    // Only way to track impression of AppLovin refresh is via this callback.
-    [self.delegate trackImpression];
-}
-
-- (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
-{
-    [self log: @"Banner dismissed"];
-}
-
-- (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
-{
-    [self log: @"Banner clicked"];
-    
-    [self.delegate trackClick];
-    [self.delegate bannerCustomEventWillLeaveApplication: self];
 }
 
 #pragma mark - Utility Methods
@@ -154,6 +123,64 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         return MOPUBErrorUnknown;
     }
+}
+
+@end
+
+@implementation AppLovinBannerDelegate
+
+#pragma mark - Initialization
+
+- (instancetype)initWithCustomEvent:(AppLovinBannerCustomEvent *)parentCustomEvent
+{
+    self = [super init];
+    if ( self )
+    {
+        self.parentCustomEvent = parentCustomEvent;
+    }
+    return self;
+}
+
+#pragma mark - Ad Load Delegate
+
+- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
+{
+    [self.parentCustomEvent log: @"Banner did load ad: %@", ad.adIdNumber];
+    [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didLoadAd: self.parentCustomEvent.adView];
+}
+
+- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
+{
+    [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
+    
+    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                         code: [self.parentCustomEvent toMoPubErrorCode: code]
+                                     userInfo: nil];
+    [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didFailToLoadAdWithError: error];
+}
+
+#pragma mark - Ad Display Delegate
+
+- (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
+{
+    [self.parentCustomEvent log: @"Banner displayed"];
+    
+    // `didDisplayAd` of this class would not be called by MoPub on AppLovin banner refresh if enabled.
+    // Only way to track impression of AppLovin refresh is via this callback.
+    [self.parentCustomEvent.delegate trackImpression];
+}
+
+- (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
+{
+    [self.parentCustomEvent log: @"Banner dismissed"];
+}
+
+- (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
+{
+    [self.parentCustomEvent log: @"Banner clicked"];
+    
+    [self.parentCustomEvent.delegate trackClick];
+    [self.parentCustomEvent.delegate bannerCustomEventWillLeaveApplication: self.parentCustomEvent];
 }
 
 @end
