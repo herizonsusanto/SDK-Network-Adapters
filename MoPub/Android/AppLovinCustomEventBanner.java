@@ -231,5 +231,6 @@ class AppLovinCustomEventBanner
     }
 }
 
+// This class with the old classname is left here for backwards compatibility purposes.
 final class AppLovinBannerAdapter
         extends AppLovinCustomEventBanner { }

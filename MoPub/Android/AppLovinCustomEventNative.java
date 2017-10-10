@@ -246,5 +246,6 @@ class AppLovinCustomEventNative
     }
 }
 
+// This class with the old classname is left here for backwards compatibility purposes.
 final class AppLovinNativeAdapter
         extends AppLovinCustomEventNative { }

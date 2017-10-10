@@ -284,5 +284,6 @@ class AppLovinCustomEventRewardedVideo
     }
 }
 
+// This class with the old classname is left here for backwards compatibility purposes.
 final class AppLovinRewardedAdapter
         extends AppLovinCustomEventRewardedVideo { }
