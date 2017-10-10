@@ -31,6 +31,10 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 5/27/17.
  */
 
+// This class with the old classname is left here for backwards compatibility purposes.
+final class AppLovinRewardedAdapter
+        extends AppLovinCustomEventRewardedVideo { }
+
 //
 // PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinRewardedAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventRewardedVideo", you can use either classname in your MoPub account.
 //
@@ -283,7 +287,3 @@ class AppLovinCustomEventRewardedVideo
         }
     }
 }
-
-// This class with the old classname is left here for backwards compatibility purposes.
-final class AppLovinRewardedAdapter
-        extends AppLovinCustomEventRewardedVideo { }

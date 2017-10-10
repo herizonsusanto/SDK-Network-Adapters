@@ -30,6 +30,10 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 5/27/17.
  */
 
+// This class with the old classname is left here for backwards compatibility purposes.
+final class AppLovinNativeAdapter
+        extends AppLovinCustomEventNative { }
+
 //
 // PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinNativeAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventNative", you can use either classname in your MoPub account.
 //
@@ -245,7 +249,3 @@ class AppLovinCustomEventNative
         }
     }
 }
-
-// This class with the old classname is left here for backwards compatibility purposes.
-final class AppLovinNativeAdapter
-        extends AppLovinCustomEventNative { }
