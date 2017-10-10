@@ -227,3 +227,6 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 }
 
 @end
+
+@implementation AppLovinRewardedCustomEvent
+@end

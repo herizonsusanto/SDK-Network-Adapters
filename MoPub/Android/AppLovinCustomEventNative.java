@@ -28,14 +28,12 @@ import static android.util.Log.ERROR;
  * AppLovin SDK native adapter for MoPub.
  * <p>
  * Created by Thomas So on 5/27/17.
- *
- * @version 2.0
  */
 
-// Please note: We have renamed this class from "AppLovinNativeAdapter" to "AppLovinCustomEventNative".
-// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventNative" as the custom event classname in the MoPub dashboard.
-// If you have integrated this before, please rename this class back to "AppLovinNativeAdapter" and use "YOUR_PACKAGE_NAME.AppLovinNativeAdapter" as the custom event classname in the MoPub dashboard.
-public class AppLovinCustomEventNative
+//
+// PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinNativeAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventNative", you can use either classname in your MoPub account.
+//
+class AppLovinCustomEventNative
         extends CustomEventNative
         implements AppLovinNativeAdLoadListener
 {
@@ -247,3 +245,6 @@ public class AppLovinCustomEventNative
         }
     }
 }
+
+final class AppLovinNativeAdapter
+        extends AppLovinCustomEventNative { }

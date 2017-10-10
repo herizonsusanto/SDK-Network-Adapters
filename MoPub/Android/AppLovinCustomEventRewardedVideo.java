@@ -29,14 +29,12 @@ import static android.util.Log.ERROR;
  * AppLovin SDK rewarded video adapter for MoPub.
  * <p>
  * Created by Thomas So on 5/27/17.
- *
- * @version 2.0
  */
 
-// Please note: We have renamed this class from "AppLovinRewardedAdapter" to "AppLovinCustomEventRewardedVideo".
-// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventRewardedVideo" as the custom event classname in the MoPub dashboard.
-// If you have integrated this before, please rename this class back to "AppLovinRewardedAdapter" and use "YOUR_PACKAGE_NAME.AppLovinRewardedAdapter" as the custom event classname in the MoPub dashboard.
-public class AppLovinCustomEventRewardedVideo
+//
+// PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinRewardedAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventRewardedVideo", you can use either classname in your MoPub account.
+//
+class AppLovinCustomEventRewardedVideo
         extends CustomEventRewardedVideo
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
@@ -285,3 +283,6 @@ public class AppLovinCustomEventRewardedVideo
         }
     }
 }
+
+final class AppLovinRewardedAdapter
+        extends AppLovinCustomEventRewardedVideo { }

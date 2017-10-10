@@ -27,14 +27,12 @@ import static android.util.Log.ERROR;
  * AppLovin SDK interstitial adapter for MoPub.
  * <p>
  * Created by Thomas So on 5/27/17.
- *
- * @version 2.0
  */
 
-// Please note: We have renamed this class from "AppLovinInterstitialAdapter" to "AppLovinCustomEventInterstitial".
-// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventInterstitial" as the custom event classname in the MoPub dashboard.
-// If you have integrated this before, please rename this class back to "AppLovinInterstitialAdapter" and use "YOUR_PACKAGE_NAME.AppLovinInterstitialAdapter" as the custom event classname in the MoPub dashboard.
-public class AppLovinCustomEventInterstitial
+//
+// PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinInterstitialAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventInterstitial", you can use either classname in your MoPub account.
+//
+class AppLovinCustomEventInterstitial
         extends CustomEventInterstitial
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
 {
@@ -218,3 +216,6 @@ public class AppLovinCustomEventInterstitial
         }
     }
 }
+
+final class AppLovinInterstitialAdapter
+        extends AppLovinCustomEventInterstitial { }
