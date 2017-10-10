@@ -25,13 +25,11 @@ import static android.util.Log.ERROR;
  * AppLovin SDK banner adapter for MoPub.
  * <p>
  * Created by Thomas So on 3/6/17.
- *
- * @version 2.0
  */
 
-// Please note: We have renamed this class from "AppLovinBannerAdapter" to "AppLovinCustomEventBanner".
-// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventBanner" as the custom event classname in the MoPub dashboard.
-// If you have integrated this before, please rename this class back to "AppLovinBannerAdapter" and use "YOUR_PACKAGE_NAME.AppLovinBannerAdapter" as the custom event classname in the MoPub dashboard.
+//
+// PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinBannerAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventBanner", you can use either classname in your MoPub account.
+//
 public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {
