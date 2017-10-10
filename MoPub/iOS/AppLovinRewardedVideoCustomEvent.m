@@ -16,6 +16,10 @@
     #import "ALIncentivizedInterstitialAd.h"
 #endif
 
+// This class implementation with the old classname is left here for backwards compatibility purposes.
+@implementation AppLovinRewardedCustomEvent
+@end
+
 @interface AppLovinRewardedVideoCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
@@ -226,8 +230,4 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     }
 }
 
-@end
-
-// This class implementation with the old classname is left here for backwards compatibility purposes.
-@implementation AppLovinRewardedCustomEvent
 @end
