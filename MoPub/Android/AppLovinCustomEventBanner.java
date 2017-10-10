@@ -27,14 +27,10 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 3/6/17.
  */
 
-// This class with the old classname is left here for backwards compatibility purposes.
-final class AppLovinBannerAdapter
-        extends AppLovinCustomEventBanner { }
-
 //
 // PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinBannerAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventBanner", you can use either classname in your MoPub account.
 //
-class AppLovinCustomEventBanner
+public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
