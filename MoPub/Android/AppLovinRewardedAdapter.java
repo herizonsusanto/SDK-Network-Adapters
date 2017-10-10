@@ -1,4 +1,4 @@
-package MoPub.Android;
+package YOUR_PACKAGE_NAME;
 
 /**
  * Created by thomasso on 10/10/17.
