@@ -14,7 +14,15 @@
     #import "ALAdView.h"
 #endif
 
-@interface AppLovinCustomEventBanner()<ALAdLoadDelegate, ALAdDisplayDelegate>
+/**
+ * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
+ */
+@interface AppLovinBannerDelegate : NSObject<ALAdLoadDelegate, ALAdDisplayDelegate>
+@property (nonatomic, weak) AppLovinCustomEventBanner *parentCustomEvent;
+- (instancetype)initWithCustomEvent:(AppLovinCustomEventBanner *)parentCustomEvent;
+@end
+
+@interface AppLovinCustomEventBanner()
 @property (nonatomic, strong) ALAdView *adView;
 @end
 
@@ -39,8 +47,11 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         CGSize size = CGSizeFromGADAdSize(adSize);
         
         self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: appLovinAdSize sdk: [ALSdk shared]];
-        self.adView.adLoadDelegate = self;
-        self.adView.adDisplayDelegate = self;
+        
+        AppLovinBannerDelegate *delegate = [[AppLovinBannerDelegate alloc] initWithCustomEvent: self];
+        self.adView.adLoadDelegate = delegate;
+        self.adView.adDisplayDelegate = delegate;
+        
         [self.adView loadNextAd];
     }
     else
@@ -52,44 +63,6 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
                                          userInfo: nil];
         [self.delegate customEventBanner: self didFailAd: error];
     }
-}
-
-#pragma mark - AppLovin Ad Load Delegate
-
-- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
-{
-    [self log: @"Banner did load ad: %@", ad.adIdNumber];
-    [self.delegate customEventBanner: self didReceiveAd: self.adView];
-}
-
-- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
-{
-    [self log: @"Banner failed to load with error: %d", code];
-    
-    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
-                                         code: [self toAdMobErrorCode: code]
-                                     userInfo: nil];
-    [self.delegate customEventBanner: self didFailAd: error];
-}
-
-#pragma mark - Ad Display Delegate
-
-- (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
-{
-    [self log: @"Banner displayed"];
-}
-
-- (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
-{
-    [self log: @"Banner dismissed"];
-}
-
-- (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
-{
-    [self log: @"Banner clicked"];
-    
-    [self.delegate customEventBannerWasClicked: self];
-    [self.delegate customEventBannerWillLeaveApplication: self];
 }
 
 #pragma mark - Utility Methods
@@ -147,6 +120,60 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         return kGADErrorInternalError;
     }
+}
+
+@end
+
+@implementation AppLovinBannerDelegate
+
+#pragma mark - Initialization
+
+- (instancetype)initWithCustomEvent:(AppLovinCustomEventBanner *)parentCustomEvent
+{
+    self = [super init];
+    if ( self )
+    {
+        self.parentCustomEvent = parentCustomEvent;
+    }
+    return self;
+}
+
+#pragma mark - AppLovin Ad Load Delegate
+
+- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
+{
+    [self.parentCustomEvent log: @"Banner did load ad: %@", ad.adIdNumber];
+    [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didReceiveAd: self.parentCustomEvent.adView];
+}
+
+- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
+{
+    [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
+    
+    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                         code: [self.parentCustomEvent toAdMobErrorCode: code]
+                                     userInfo: nil];
+    [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didFailAd: error];
+}
+
+#pragma mark - Ad Display Delegate
+
+- (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
+{
+    [self.parentCustomEvent log: @"Banner displayed"];
+}
+
+- (void)ad:(ALAd *)ad wasHiddenIn:(UIView *)view
+{
+    [self.parentCustomEvent log: @"Banner dismissed"];
+}
+
+- (void)ad:(ALAd *)ad wasClickedIn:(UIView *)view
+{
+    [self.parentCustomEvent log: @"Banner clicked"];
+    
+    [self.parentCustomEvent.delegate customEventBannerWasClicked: self.parentCustomEvent];
+    [self.parentCustomEvent.delegate customEventBannerWillLeaveApplication: self.parentCustomEvent];
 }
 
 @end
