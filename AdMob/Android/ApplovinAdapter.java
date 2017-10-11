@@ -33,8 +33,6 @@ import static android.util.Log.ERROR;
  * AppLovin SDK rewarded video adapter for AdMob.
  * <p>
  * Created by Thomas So on 5/29/17.
- *
- * @version 2.0
  */
 
 public class ApplovinAdapter

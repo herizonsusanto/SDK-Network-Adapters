@@ -28,8 +28,6 @@ import static android.util.Log.ERROR;
  * AppLovin SDK banner adapter for AdMob.
  * <p>
  * Created by thomasso on 4/12/17.
- *
- * @version 2.0
  */
 
 public class AppLovinCustomEventBanner

@@ -15,6 +15,10 @@
     #import "ALInterstitialAd.h"
 #endif
 
+// This class implementation with the old classname is left here for backwards compatibility purposes.
+@implementation AppLovinCustomEventInter
+@end
+
 @interface AppLovinCustomEventInterstitial() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
 @property (nonatomic, strong) ALInterstitialAd *interstitialAd;

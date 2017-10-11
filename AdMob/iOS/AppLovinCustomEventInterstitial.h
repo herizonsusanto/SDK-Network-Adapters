@@ -12,3 +12,8 @@
 @interface AppLovinCustomEventInterstitial : NSObject <GADCustomEventInterstitial>
 
 @end
+
+// AppLovinCustomEventInter is deprecated but kept here for backwards-compatibility purposes.
+@interface AppLovinCustomEventInter : AppLovinCustomEventInterstitial
+@end
+
