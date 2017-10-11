@@ -31,13 +31,11 @@ import static android.util.Log.ERROR;
  * AppLovin SDK interstitial adapter for AdMob.
  * <p>
  * Created by Thomas So on 5/28/17.
- *
- * @version 2.0
  */
 
-// Please note: We have renamed this class from "AdMobMediationInterEvent" to "AppLovinCustomEventInterstitial".
-// If this is your first time integrating, please use "YOUR_PACKAGE_NAME.AppLovinCustomEventInterstitial" as the custom event classname in the AdMob dashboard.
-// If you have integrated this before, please rename this class back to "AdMobMediationInterEvent" and use "YOUR_PACKAGE_NAME.AdMobMediationInterEvent" as the custom event classname in the AdMob dashboard.
+//
+// PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AdMobMediationInterEvent" to "YOUR_PACKAGE_NAME.AppLovinCustomEventInterstitial", you can use either classname in your AdMob account.
+//
 public class AppLovinCustomEventInterstitial
         implements CustomEventInterstitial, AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
 {
