@@ -130,6 +130,8 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
         }
     }
     
+    [self log: @"Unable to retrieve AppLovin size from GADAdSize: %@", NSStringFromGADAdSize(size)];
+    
     return nil;
 }
 
