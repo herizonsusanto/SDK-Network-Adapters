@@ -20,7 +20,7 @@
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
-@interface AppLovinBannerDelegate : NSObject<ALAdDisplayDelegate, ALAdLoadDelegate>
+@interface AppLovinMoPubBannerDelegate : NSObject<ALAdLoadDelegate, ALAdDisplayDelegate>
 @property (nonatomic, weak) AppLovinBannerCustomEvent *parentCustomEvent;
 - (instancetype)initWithCustomEvent:(AppLovinBannerCustomEvent *)parentCustomEvent;
 @end
@@ -48,7 +48,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         
         self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
         
-        AppLovinBannerDelegate *delegate = [[AppLovinBannerDelegate alloc] initWithCustomEvent: self];
+        AppLovinMoPubBannerDelegate *delegate = [[AppLovinMoPubBannerDelegate alloc] initWithCustomEvent: self];
         self.adView.adLoadDelegate = delegate;
         self.adView.adDisplayDelegate = delegate;
         
@@ -127,7 +127,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 @end
 
-@implementation AppLovinBannerDelegate
+@implementation AppLovinMoPubBannerDelegate
 
 #pragma mark - Initialization
 
