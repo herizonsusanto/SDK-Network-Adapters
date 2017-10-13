@@ -108,6 +108,27 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         return [ALAdSize sizeLeader];
     }
+    // This is not a concrete size, so attempt to check for fluid size
+    else
+    {
+        CGSize frameSize = size.size;
+        if ( CGRectGetWidth([UIScreen mainScreen].bounds) == frameSize.width )
+        {
+            CGFloat frameHeight = frameSize.height;
+            if ( frameHeight == CGSizeFromGADAdSize(kGADAdSizeBanner).height || frameHeight == CGSizeFromGADAdSize(kGADAdSizeLargeBanner).height )
+            {
+                return [ALAdSize sizeBanner];
+            }
+            else if ( frameHeight == CGSizeFromGADAdSize(kGADAdSizeMediumRectangle).height )
+            {
+                return [ALAdSize sizeMRec];
+            }
+            else if ( frameHeight == CGSizeFromGADAdSize(kGADAdSizeLeaderboard).height )
+            {
+                return [ALAdSize sizeLeader];
+            }
+        }
+    }
     
     return nil;
 }
