@@ -85,6 +85,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 #pragma mark - Utility Methods
 
+/**
+ * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
+ */
 - (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
 {
     // Prematurely create instance of ALAdView to store initialized one in later

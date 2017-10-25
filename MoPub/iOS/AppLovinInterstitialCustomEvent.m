@@ -41,6 +41,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     NSString *zoneIdentifier = info[@"zone_id"];
     if ( [ALSdk versionCode] >= 450 && zoneIdentifier.length > 0 )
     {
+        // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
         [adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
                         withObject: zoneIdentifier
                         withObject: self];
