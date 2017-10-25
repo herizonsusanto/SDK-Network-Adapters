@@ -36,7 +36,19 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
     
     ALAdService *adService = [ALSdk shared].adService;
-    [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+    
+    // Zones support is available on AppLovin SDK 4.5.0 and higher
+    NSString *zoneIdentifier = info[@"zone_id"];
+    if ( [ALSdk versionCode] >= 450 && zoneIdentifier.length > 0 )
+    {
+        [adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
+                        withObject: zoneIdentifier
+                        withObject: self];
+    }
+    else
+    {
+        [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+    }
 }
 
 - (void)showInterstitialFromRootViewController:(UIViewController *)rootViewController
