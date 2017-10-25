@@ -17,6 +17,9 @@
     #import "ALAdView.h"
 #endif
 
+// Convenience macro for checking if AppLovin SDK has support for zones
+#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
@@ -48,7 +51,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier = info[@"zone_id"];
-        if ( [ALSdk versionCode] >= 450 && zoneIdentifier.length > 0 )
+        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
         {
             self.adView = [self adViewWithAdSize: adSize zoneIdentifier: zoneIdentifier];
         }

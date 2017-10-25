@@ -15,6 +15,9 @@
     #import "ALInterstitialAd.h"
 #endif
 
+// Convenience macro for checking if AppLovin SDK has support for zones
+#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
 @property (nonatomic, strong) ALInterstitialAd *interstitialAd;
@@ -39,7 +42,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     NSString *zoneIdentifier = info[@"zone_id"];
-    if ( [ALSdk versionCode] >= 450 && zoneIdentifier.length > 0 )
+    if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
     {
         // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
         [adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
