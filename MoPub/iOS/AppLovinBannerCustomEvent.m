@@ -46,7 +46,18 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
         
-        self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
+        // Zones support is available on AppLovin SDK 4.5.0 and higher
+        NSString *zoneIdentifier = info[@"zone_id"];
+        if ( [ALSdk versionCode] >= 450 && zoneIdentifier.length > 0 )
+        {
+            self.adView = [self adViewWithAdSize: adSize zoneIdentifier: zoneIdentifier];
+        }
+        else
+        {
+            self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
+                                                     size: adSize
+                                                      sdk: [ALSdk shared]];
+        }
         
         AppLovinMoPubBannerDelegate *delegate = [[AppLovinMoPubBannerDelegate alloc] initWithCustomEvent: self];
         self.adView.adLoadDelegate = delegate;
@@ -73,6 +84,23 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 }
 
 #pragma mark - Utility Methods
+
+- (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
+{
+    // Prematurely create instance of ALAdView to store initialized one in later
+    ALAdView *adView = [ALAdView alloc];
+    
+    // We must use NSInvocation over performSelector: for initializers
+    NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
+    [inv setSelector: @selector(initWithSize:zoneIdentifier:)];
+    [inv setArgument: &adSize atIndex: 2];
+    [inv setArgument: &zoneIdentifier atIndex: 3];
+    [inv setReturnValue: &adView];
+    [inv invokeWithTarget: adView];
+    
+    return adView;
+}
 
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(CGSize)size
 {
