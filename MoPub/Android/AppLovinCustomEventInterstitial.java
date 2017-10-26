@@ -2,6 +2,7 @@ package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinInterstitialAd;
@@ -67,7 +68,27 @@ public class AppLovinCustomEventInterstitial
 
         final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
         sdk.setPluginVersion( "MoPub-2.0" );
-        sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
+
+        if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && !TextUtils.isEmpty( serverExtras.get( "zone_id" ) ) )
+        {
+            final String zoneId = serverExtras.get( "zone_id" );
+
+            // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+            try
+            {
+                final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
+                method.invoke( sdk.getAdService(), zoneId, this );
+            }
+            catch ( Throwable th )
+            {
+                log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
+                listener.onInterstitialFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
+            }
+        }
+        else
+        {
+            sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
+        }
     }
 
     @Override
