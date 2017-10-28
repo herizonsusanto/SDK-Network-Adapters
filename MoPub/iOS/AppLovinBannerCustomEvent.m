@@ -52,6 +52,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         self.adView.adLoadDelegate = delegate;
         self.adView.adDisplayDelegate = delegate;
         
+        // As of iOS SDK >= 4.3.0, we added a delegate for banner events
         if ( [self.adView respondsToSelector: @selector(setAdEventDelegate:)] )
         {
             self.adView.adEventDelegate = delegate;
