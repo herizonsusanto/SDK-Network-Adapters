@@ -20,7 +20,7 @@
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
-@interface AppLovinMoPubBannerDelegate : NSObject<ALAdLoadDelegate, ALAdDisplayDelegate>
+@interface AppLovinMoPubBannerDelegate : NSObject<ALAdLoadDelegate, ALAdDisplayDelegate, ALAdViewEventDelegate>
 @property (nonatomic, weak) AppLovinBannerCustomEvent *parentCustomEvent;
 - (instancetype)initWithCustomEvent:(AppLovinBannerCustomEvent *)parentCustomEvent;
 @end
@@ -51,6 +51,11 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         AppLovinMoPubBannerDelegate *delegate = [[AppLovinMoPubBannerDelegate alloc] initWithCustomEvent: self];
         self.adView.adLoadDelegate = delegate;
         self.adView.adDisplayDelegate = delegate;
+        
+        if ( [self.adView respondsToSelector: @selector(setAdEventDelegate:)] )
+        {
+            self.adView.adEventDelegate = delegate;
+        }
         
         [self.adView loadNextAd];
     }
@@ -181,6 +186,36 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     [self.parentCustomEvent.delegate trackClick];
     [self.parentCustomEvent.delegate bannerCustomEventWillLeaveApplication: self.parentCustomEvent];
+}
+
+#pragma mark - Ad View Event Delegate
+
+- (void)ad:(ALAd *)ad didPresentFullscreenForAdView:(ALAdView *)adView
+{
+    [self.parentCustomEvent log: @"Banner presented fullscreen"];
+    [self.parentCustomEvent.delegate bannerCustomEventWillBeginAction: self.parentCustomEvent];
+}
+
+- (void)ad:(ALAd *)ad willDismissFullscreenForAdView:(ALAdView *)adView
+{
+    [self.parentCustomEvent log: @"Banner will dismiss fullscreen"];
+}
+
+- (void)ad:(ALAd *)ad didDismissFullscreenForAdView:(ALAdView *)adView
+{
+    [self.parentCustomEvent log: @"Banner did dismiss fullscreen"];
+    [self.parentCustomEvent.delegate bannerCustomEventDidFinishAction: self.parentCustomEvent];
+}
+
+- (void)ad:(ALAd *)ad willLeaveApplicationForAdView:(ALAdView *)adView
+{
+    // We will fire bannerCustomEventWillLeaveApplication:: in the ad:wasClickedIn: callback
+    [self.parentCustomEvent log: @"Banner left application"];
+}
+
+- (void)ad:(ALAd *)ad didFailToDisplayInAdView:(ALAdView *)adView withError:(ALAdViewDisplayErrorCode)code
+{
+    [self.parentCustomEvent log: @"Banner failed to display: %ld", code];
 }
 
 @end
