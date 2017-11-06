@@ -183,10 +183,11 @@ public class AppLovinCustomEventBanner
             // AppLovin SDK < 7.1.0 uses an Activity, as opposed to Context in >= 7.1.0
             final Class<?> contextClass = ( AppLovinSdk.VERSION_CODE < 710 ) ? Activity.class : Context.class;
 
-            // Dynamically create an instance of AppLovinAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
+            // Zones support is available on AppLovin SDK 7.5.0 and higher
             final Constructor<?> constructor;
             if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && !TextUtils.isEmpty( serverExtras.get( "zone_id" ) ) )
             {
+                // Dynamically create an instance of AppLovinAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
                 constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, String.class, contextClass );
                 adView = (AppLovinAdView) constructor.newInstance( size, serverExtras.get( "zone_id" ), parentContext );
             }
