@@ -69,6 +69,7 @@ public class AppLovinCustomEventInterstitial
         final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
         sdk.setPluginVersion( "MoPub-2.0" );
 
+        // Zones support is available on AppLovin SDK 7.5.0 and higher
         if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && !TextUtils.isEmpty( serverExtras.get( "zone_id" ) ) )
         {
             final String zoneId = serverExtras.get( "zone_id" );
