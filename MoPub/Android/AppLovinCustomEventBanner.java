@@ -79,6 +79,8 @@ public class AppLovinCustomEventBanner
                 {
                     log( ERROR, "Failed to load banner ad with code: " + errorCode );
                     customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+                    
+                    // TODO: Add support for backfilling on regular ad request if invalid zone entered
                 }
             } );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()

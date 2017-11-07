@@ -95,6 +95,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
                                          code: [self toMoPubErrorCode: code]
                                      userInfo: nil];
     [self.delegate interstitialCustomEvent: self didFailToLoadAdWithError: error];
+    
+    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate
