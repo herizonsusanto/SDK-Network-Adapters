@@ -74,7 +74,7 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
     [[ALSdk shared] setPluginVersion: adapterVersion];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    NSString *zoneIdentifier = [self zoneIdentifierFromConnector: self.connector];;
+    NSString *zoneIdentifier = [self zoneIdentifierFromConnector: self.connector];
     
     if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
     {
@@ -88,14 +88,7 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
     self.incent.adVideoPlaybackDelegate = self;
     self.incent.adDisplayDelegate = self;
     
-    if ( self.incent.readyForDisplay )
-    {
-        [self.connector adapterDidReceiveRewardBasedVideoAd: self];
-    }
-    else
-    {
-        [self.incent preloadAndNotify: self];
-    }
+    [self.incent preloadAndNotify: self];
 }
 
 - (void)presentRewardBasedVideoAdWithRootViewController:(UIViewController *)viewController
