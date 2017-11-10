@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinInterstitialAd;
@@ -71,7 +72,27 @@ public class AppLovinCustomEventInterstitial
 
         final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
         sdk.setPluginVersion( "AdMob-2.0" );
-        sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
+
+        // Zones support is available on AppLovin SDK 7.5.0 and higher
+        if ( AppLovinSdk.VERSION_CODE >= 750 && customEventExtras != null && !TextUtils.isEmpty( customEventExtras.getString( "zone_id" ) ) )
+        {
+            final String zoneId = customEventExtras.getString( "zone_id" );
+            // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+            try
+            {
+                final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
+                method.invoke( sdk.getAdService(), zoneId, this );
+            }
+            catch ( Throwable th )
+            {
+                log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
+                listener.onAdFailedToLoad( AdRequest.ERROR_CODE_INVALID_REQUEST );
+            }
+        }
+        else
+        {
+            sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
+        }
     }
 
     @Override
@@ -137,6 +158,8 @@ public class AppLovinCustomEventInterstitial
                 listener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
             }
         } );
+
+        // TODO: Add support for backfilling on regular ad request if invalid zone entered
     }
 
     //
