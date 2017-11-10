@@ -16,6 +16,9 @@
     #import "ALIncentivizedInterstitialAd.h"
 #endif
 
+// Convenience macro for checking if AppLovin SDK has support for zones
+#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+
 @interface GADMAdapterAppLovinRewardBasedVideoAd() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
@@ -42,7 +45,7 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
 
 + (Class<GADAdNetworkExtras>)networkExtrasClass
 {
-    return nil;
+    return [GADCustomEventExtras class];
 }
 
 - (instancetype)initWithRewardBasedVideoAdNetworkConnector:(id<GADMRewardBasedVideoAdNetworkConnector>)connector
@@ -69,6 +72,21 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
     
     NSString *adapterVersion = [[self class] adapterVersion];
     [[ALSdk shared] setPluginVersion: adapterVersion];
+    
+    // Zones support is available on AppLovin SDK 4.5.0 and higher
+    NSString *zoneIdentifier = [self zoneIdentifierFromConnector: self.connector];;
+    
+    if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+    {
+        self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
+    }
+    else
+    {
+        self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+    }
+    
+    self.incent.adVideoPlaybackDelegate = self;
+    self.incent.adDisplayDelegate = self;
     
     if ( self.incent.readyForDisplay )
     {
@@ -122,6 +140,8 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
                                          code: [self toAdMobErrorCode: code]
                                      userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
     [self.connector adapter: self didFailToLoadRewardBasedVideoAdwithError: error];
+    
+    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate
@@ -203,19 +223,43 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
 
 #pragma mark - Incentivized Interstitial
 
-- (ALIncentivizedInterstitialAd *)incent
+/**
+ * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
+ */
+- (ALIncentivizedInterstitialAd *)incentivizedInterstitialAdWithZoneIdentifier:(NSString *)zoneIdentifier
 {
-    if ( !_incent )
-    {
-        _incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
-        _incent.adVideoPlaybackDelegate = self;
-        _incent.adDisplayDelegate = self;
-    }
+    // Prematurely create instance of ALAdView to store initialized one in later
+    ALIncentivizedInterstitialAd *incent = [ALIncentivizedInterstitialAd alloc];
     
-    return _incent;
+    // We must use NSInvocation over performSelector: for initializers
+    NSMethodSignature *methodSignature = [ALIncentivizedInterstitialAd instanceMethodSignatureForSelector: @selector(initWithZoneIdentifier:)];
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
+    [inv setSelector: @selector(initWithZoneIdentifier:)];
+    [inv setArgument: &zoneIdentifier atIndex: 2];
+    [inv setReturnValue: &incent];
+    [inv invokeWithTarget: incent];
+    
+    return incent;
 }
 
 #pragma mark - Utility Methods
+
+- (nullable NSString *)zoneIdentifierFromConnector:(id<GADMRewardBasedVideoAdNetworkConnector>)connector
+{
+    // Retrieve zone identifier from the connector's extras
+    NSString *label = connector.credentials[@"label"];
+    id<GADAdNetworkExtras> networkExtras = connector.networkExtras;
+    
+    if ( label.length > 0 && [networkExtras isKindOfClass: [GADCustomEventExtras class]] )
+    {
+        NSDictionary *parameters = [(GADCustomEventExtras *)networkExtras extrasForLabel: label];
+        return parameters[@"zoneIdentifier"];
+    }
+    else
+    {
+        return nil;
+    }
+}
 
 - (void)log:(NSString *)format, ...
 {
