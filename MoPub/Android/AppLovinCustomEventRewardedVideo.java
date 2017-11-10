@@ -90,15 +90,7 @@ public class AppLovinCustomEventRewardedVideo
             incentivizedInterstitial = AppLovinIncentivizedInterstitial.create( activity );
         }
 
-
-        if ( hasVideoAvailable() )
-        {
-            MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( this.getClass(), "" );
-        }
-        else
-        {
-            incentivizedInterstitial.preload( this );
-        }
+        incentivizedInterstitial.preload( this );
     }
 
     @Override
