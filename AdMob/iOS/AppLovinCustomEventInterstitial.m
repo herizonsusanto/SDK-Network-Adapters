@@ -15,6 +15,9 @@
     #import "ALInterstitialAd.h"
 #endif
 
+// Convenience macro for checking if AppLovin SDK has support for zones
+#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+
 // This class implementation with the old classname is left here for backwards compatibility purposes.
 @implementation AppLovinCustomEventInter
 @end
@@ -41,7 +44,20 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     [[ALSdk shared] setPluginVersion: @"AdMob-2.3"];
     
     ALAdService *adService = [ALSdk shared].adService;
-    [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+    
+    // Zones support is available on AppLovin SDK 4.5.0 and higher
+    NSString *zoneIdentifier = request.additionalParameters[@"zoneIdentifier"];
+    if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+    {
+        // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+        [adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
+                        withObject: zoneIdentifier
+                        withObject: self];
+    }
+    else
+    {
+        [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+    }
 }
 
 - (void)presentFromRootViewController:(UIViewController *)rootViewController
@@ -95,6 +111,8 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
                                          code: [self toAdMobErrorCode: code]
                                      userInfo: nil];
     [self.delegate customEventInterstitial: self didFailAd: error];
+    
+    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate
