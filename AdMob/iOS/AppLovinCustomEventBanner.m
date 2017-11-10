@@ -14,6 +14,10 @@
     #import "ALAdView.h"
 #endif
 
+// Convenience macro for checking if AppLovin SDK has support for zones
+#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define EMPTY_ZONE @""
+
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
@@ -32,6 +36,16 @@
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
 
+// A dictionary of Zone -> AdView to be shared by instances of the custom event.
+static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
+
++ (void)initialize
+{
+    [super initialize];
+
+    ALGlobalAdViews = [NSMutableDictionary dictionary];
+}
+
 #pragma mark - GADCustomEventBanner Protocol
 
 - (void)requestBannerAd:(GADAdSize)adSize parameter:(NSString *)serverParameter label:(NSString *)serverLabel request:(GADCustomEventRequest *)request
@@ -43,10 +57,31 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     if ( appLovinAdSize )
     {
         [[ALSdk shared] setPluginVersion: @"AdMob-2.3"];
-        
+
         CGSize size = CGSizeFromGADAdSize(adSize);
         
-        self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: appLovinAdSize sdk: [ALSdk shared]];
+        // Zones support is available on AppLovin SDK 4.5.0 and higher
+        NSString *zoneIdentifier = request.additionalParameters[@"zoneIdentifier"];
+        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        {
+            self.adView = ALGlobalAdViews[zoneIdentifier];
+            if ( !self.adView )
+            {
+                self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: zoneIdentifier];
+                ALGlobalAdViews[zoneIdentifier] = self.adView;
+            }
+        }
+        else
+        {
+            self.adView = ALGlobalAdViews[EMPTY_ZONE];
+            if ( !self.adView )
+            {
+                self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
+                                                         size: appLovinAdSize
+                                                          sdk: [ALSdk shared]];
+                ALGlobalAdViews[EMPTY_ZONE] = self.adView;
+            }
+        }
         
         AppLovinAdMobBannerDelegate *delegate = [[AppLovinAdMobBannerDelegate alloc] initWithCustomEvent: self];
         self.adView.adLoadDelegate = delegate;
@@ -66,6 +101,26 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 }
 
 #pragma mark - Utility Methods
+
+/**
+ * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
+ */
+- (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
+{
+    // Prematurely create instance of ALAdView to store initialized one in later
+    ALAdView *adView = [ALAdView alloc];
+
+    // We must use NSInvocation over performSelector: for initializers
+    NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
+    [inv setSelector: @selector(initWithSize:zoneIdentifier:)];
+    [inv setArgument: &adSize atIndex: 2];
+    [inv setArgument: &zoneIdentifier atIndex: 3];
+    [inv setReturnValue: &adView];
+    [inv invokeWithTarget: adView];
+
+    return adView;
+}
 
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(GADAdSize)size
 {
@@ -177,6 +232,8 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
                                          code: [self.parentCustomEvent toAdMobErrorCode: code]
                                      userInfo: nil];
     [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didFailAd: error];
+    
+    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate
