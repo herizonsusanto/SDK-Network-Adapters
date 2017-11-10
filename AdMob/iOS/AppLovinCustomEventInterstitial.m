@@ -46,7 +46,7 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     ALAdService *adService = [ALSdk shared].adService;
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    NSString *zoneIdentifier = request.additionalParameters[@"zoneIdentifier"];
+    NSString *zoneIdentifier = request.additionalParameters[@"zone_id"];
     if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
     {
         // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs

@@ -253,7 +253,7 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
     if ( label.length > 0 && [networkExtras isKindOfClass: [GADCustomEventExtras class]] )
     {
         NSDictionary *parameters = [(GADCustomEventExtras *)networkExtras extrasForLabel: label];
-        return parameters[@"zoneIdentifier"];
+        return parameters[@"zone_id"];
     }
     else
     {
