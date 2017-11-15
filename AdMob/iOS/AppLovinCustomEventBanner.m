@@ -109,7 +109,7 @@ static const CGFloat kALBannerStandardHeight = 50.0f;
         
         // Assume fluid width, and check for height with offset tolerance
         CGFloat offset = ABS(kALBannerStandardHeight - frameSize.height);
-        if ( offset < kALBannerHeightOffsetTolerance )
+        if ( offset <= kALBannerHeightOffsetTolerance )
         {
             return [ALAdSize sizeBanner];
         }

@@ -146,7 +146,7 @@ public class AppLovinCustomEventBanner
                 // Assume fluid width, and check for height with offset tolerance
                 final int offset = Math.abs( BANNER_STANDARD_HEIGHT - height );
 
-                if ( offset < BANNER_HEIGHT_OFFSET_TOLERANCE )
+                if ( offset <= BANNER_HEIGHT_OFFSET_TOLERANCE )
                 {
                     return AppLovinAdSize.BANNER;
                 }
