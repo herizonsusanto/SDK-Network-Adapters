@@ -74,8 +74,7 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
     [[ALSdk shared] setPluginVersion: adapterVersion];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    NSString *zoneIdentifier = [self zoneIdentifierFromConnector: self.connector];
-    
+    NSString *zoneIdentifier = self.connector.credentials[@"parameter"];
     if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
     {
         self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
@@ -236,23 +235,6 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
 }
 
 #pragma mark - Utility Methods
-
-- (nullable NSString *)zoneIdentifierFromConnector:(id<GADMRewardBasedVideoAdNetworkConnector>)connector
-{
-    // Retrieve zone identifier from the connector's extras
-    NSString *label = connector.credentials[@"label"];
-    id<GADAdNetworkExtras> networkExtras = connector.networkExtras;
-    
-    if ( label.length > 0 && [networkExtras isKindOfClass: [GADCustomEventExtras class]] )
-    {
-        NSDictionary *parameters = [(GADCustomEventExtras *)networkExtras extrasForLabel: label];
-        return parameters[@"zone_id"];
-    }
-    else
-    {
-        return nil;
-    }
-}
 
 - (void)log:(NSString *)format, ...
 {

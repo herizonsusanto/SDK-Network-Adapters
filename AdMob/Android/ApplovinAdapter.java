@@ -96,9 +96,10 @@ public class ApplovinAdapter
         log( DEBUG, "Requesting AppLovin rewarded video with networkExtras: " + networkExtras );
 
         // Zones support is available on AppLovin SDK 4.5.0 and higher
-        if ( AppLovinSdk.VERSION_CODE >= 750 && networkExtras != null && !TextUtils.isEmpty( networkExtras.getString( "zone_id" ) ) )
+
+        if ( AppLovinSdk.VERSION_CODE >= 750 && serverParameters != null && !TextUtils.isEmpty( serverParameters.getString( "parameter" ) ) )
         {
-            final String zoneId = networkExtras.getString( "zone_id" );
+            final String zoneId = serverParameters.getString( "parameter" );
             incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( this.context ) );
         }
         else
