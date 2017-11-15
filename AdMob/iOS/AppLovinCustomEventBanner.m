@@ -36,6 +36,9 @@
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
 
+static const CGFloat kALBannerHeightOffsetTolerance = 10.0f;
+static const CGFloat kALBannerStandardHeight = 50.0f;
+
 // A dictionary of Zone -> AdView to be shared by instances of the custom event.
 static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 
@@ -136,10 +139,12 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     {
         return [ALAdSize sizeLeader];
     }
-    // This is not a concrete size, so attempt to check for fluid size
+    // This is not a one of AdMob's predefined size
     else
     {
         CGSize frameSize = size.size;
+        
+        // Attempt to check for fluid size
         if ( CGRectGetWidth([UIScreen mainScreen].bounds) == frameSize.width )
         {
             CGFloat frameHeight = frameSize.height;
@@ -155,6 +160,13 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
             {
                 return [ALAdSize sizeLeader];
             }
+        }
+        
+        // Assume fluid width, and check for height with offset tolerance
+        CGFloat offset = ABS(kALBannerStandardHeight - frameSize.height);
+        if ( offset <= kALBannerHeightOffsetTolerance )
+        {
+            return [ALAdSize sizeBanner];
         }
     }
     
