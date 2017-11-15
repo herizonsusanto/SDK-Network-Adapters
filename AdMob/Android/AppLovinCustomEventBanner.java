@@ -35,6 +35,9 @@ public class AppLovinCustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
 
+    private static final int BANNER_STANDARD_HEIGHT         = 50;
+    private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
+
     private AppLovinAdView adView;
 
     //
@@ -168,6 +171,16 @@ public class AppLovinCustomEventBanner
         else if ( AdSize.LEADERBOARD.equals( adSize ) )
         {
             return AppLovinAdSize.LEADER;
+        }
+        // This is not a one of AdMob's predefined size
+        else
+        {
+            // Assume fluid width, and check for height with offset tolerance
+            final int offset = Math.abs( BANNER_STANDARD_HEIGHT - adSize.getHeight() );
+            if ( offset < BANNER_HEIGHT_OFFSET_TOLERANCE )
+            {
+                return AppLovinAdSize.BANNER;
+            }
         }
 
         return null;

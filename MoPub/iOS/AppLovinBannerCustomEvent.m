@@ -34,6 +34,9 @@
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
+static const CGFloat kALBannerHeightOffsetTolerance = 10.0f;
+static const CGFloat kALBannerStandardHeight = 50.0f;
+
 #pragma mark - MPBannerCustomEvent Overridden Methods
 
 - (void)requestAdWithSize:(CGSize)size customEventInfo:(NSDictionary *)info
@@ -87,6 +90,16 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     else if ( CGSizeEqualToSize(size, MOPUB_LEADERBOARD_SIZE) )
     {
         return [ALAdSize sizeLeader];
+    }
+    // This is not a one of MoPub's predefined size
+    else
+    {
+        // Assume fluid width, and check for height with offset tolerance
+        CGFloat offset = ABS(kALBannerStandardHeight - size.height);
+        if ( offset < kALBannerHeightOffsetTolerance )
+        {
+            return [ALAdSize sizeBanner];
+        }
     }
     
     return nil;

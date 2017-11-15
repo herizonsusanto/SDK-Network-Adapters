@@ -32,6 +32,9 @@
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
 
+static const CGFloat kALBannerHeightOffsetTolerance = 10.0f;
+static const CGFloat kALBannerStandardHeight = 50.0f;
+
 #pragma mark - GADCustomEventBanner Protocol
 
 - (void)requestBannerAd:(GADAdSize)adSize parameter:(NSString *)serverParameter label:(NSString *)serverLabel request:(GADCustomEventRequest *)request
@@ -81,10 +84,12 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         return [ALAdSize sizeLeader];
     }
-    // This is not a concrete size, so attempt to check for fluid size
+    // This is not a one of AdMob's predefined size
     else
     {
         CGSize frameSize = size.size;
+        
+        // Attempt to check for fluid size
         if ( CGRectGetWidth([UIScreen mainScreen].bounds) == frameSize.width )
         {
             CGFloat frameHeight = frameSize.height;
@@ -100,6 +105,13 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
             {
                 return [ALAdSize sizeLeader];
             }
+        }
+        
+        // Assume fluid width, and check for height with offset tolerance
+        CGFloat offset = ABS(kALBannerStandardHeight - frameSize.height);
+        if ( offset < kALBannerHeightOffsetTolerance )
+        {
+            return [ALAdSize sizeBanner];
         }
     }
     
