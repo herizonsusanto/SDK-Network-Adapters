@@ -25,15 +25,6 @@
 // on every ad load regardless if ad was actually displayed or not.
 static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobalIncentivizedInterstitialAds;
 
-#pragma mark - Class initialization
-
-+ (void)initialize
-{
-    [super initialize];
-    
-    ALGlobalIncentivizedInterstitialAds = [NSMutableDictionary dictionary];
-}
-
 @interface GADMAdapterAppLovinRewardBasedVideoAd() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
@@ -50,6 +41,15 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
 static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
+
+#pragma mark - Class Initialization
+
++ (void)initialize
+{
+    [super initialize];
+    
+    ALGlobalIncentivizedInterstitialAds = [NSMutableDictionary dictionary];
+}
 
 #pragma mark - GADMRewardBasedVideoAdNetworkAdapter Protocol
 
