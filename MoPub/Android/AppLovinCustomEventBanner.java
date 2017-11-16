@@ -36,6 +36,9 @@ public class AppLovinCustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
 
+    private static final int BANNER_STANDARD_HEIGHT         = 50;
+    private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
+
     private static final String AD_WIDTH_KEY  = "com_mopub_ad_width";
     private static final String AD_HEIGHT_KEY = "com_mopub_ad_height";
 
@@ -57,7 +60,7 @@ public class AppLovinCustomEventBanner
 
         log( DEBUG, "Requesting AppLovin banner with localExtras: " + localExtras );
 
-        final AppLovinAdSize adSize = appLovinAdSizeFromServerExtras( localExtras );
+        final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )
         {
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
@@ -125,10 +128,10 @@ public class AppLovinCustomEventBanner
     // Utility Methods
     //
 
-    private AppLovinAdSize appLovinAdSizeFromServerExtras(final Map<String, Object> serverExtras)
+    private AppLovinAdSize appLovinAdSizeFromLocalExtras(final Map<String, Object> localExtras)
     {
         // Handle trivial case
-        if ( serverExtras == null || serverExtras.isEmpty() )
+        if ( localExtras == null || localExtras.isEmpty() )
         {
             log( ERROR, "No serverExtras provided" );
             return null;
@@ -136,17 +139,18 @@ public class AppLovinCustomEventBanner
 
         try
         {
-            final int width = (Integer) serverExtras.get( AD_WIDTH_KEY );
-            final int height = (Integer) serverExtras.get( AD_HEIGHT_KEY );
+            final int width = (Integer) localExtras.get( AD_WIDTH_KEY );
+            final int height = (Integer) localExtras.get( AD_HEIGHT_KEY );
 
             // We have valid dimensions
             if ( width > 0 && height > 0 )
             {
                 log( DEBUG, "Valid width (" + width + ") and height (" + height + ") provided" );
 
-                // Use the smallest AppLovinAdSize that will properly contain the adView
+                // Assume fluid width, and check for height with offset tolerance
+                final int offset = Math.abs( BANNER_STANDARD_HEIGHT - height );
 
-                if ( height <= AppLovinAdSize.BANNER.getHeight() )
+                if ( offset <= BANNER_HEIGHT_OFFSET_TOLERANCE )
                 {
                     return AppLovinAdSize.BANNER;
                 }
