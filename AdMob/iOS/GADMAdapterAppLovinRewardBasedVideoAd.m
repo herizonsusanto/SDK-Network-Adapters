@@ -18,6 +18,21 @@
 
 // Convenience macro for checking if AppLovin SDK has support for zones
 #define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define DEFAULT_ZONE @""
+
+// A dictionary of Zone -> `ALIncentivizedInterstitialAd` to be shared by instances of the custom event.
+// This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `ALIncentivizedInterstitialAd`)
+// on every ad load regardless if ad was actually displayed or not.
+static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobalIncentivizedInterstitialAds;
+
+#pragma mark - Class initialization
+
++ (void)initialize
+{
+    [super initialize];
+    
+    ALGlobalIncentivizedInterstitialAds = [NSMutableDictionary dictionary];
+}
 
 @interface GADMAdapterAppLovinRewardBasedVideoAd() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
@@ -74,14 +89,25 @@ static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3";
     [[ALSdk shared] setPluginVersion: adapterVersion];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    NSString *zoneIdentifier = self.connector.credentials[@"parameter"];
-    if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+    NSString *zoneIdentifier = self.connector.credentials[@"parameter"] ?: DEFAULT_ZONE;
+    
+    // Check if incentivized ad for zone already exists
+    if ( ALGlobalIncentivizedInterstitialAds[zoneIdentifier] )
     {
-        self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
+        self.incent = ALGlobalIncentivizedInterstitialAds[zoneIdentifier];
     }
     else
     {
-        self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        {
+            self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
+        }
+        else
+        {
+            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+        }
+        
+        ALGlobalIncentivizedInterstitialAds[zoneIdentifier] = self.incent;
     }
     
     self.incent.adVideoPlaybackDelegate = self;

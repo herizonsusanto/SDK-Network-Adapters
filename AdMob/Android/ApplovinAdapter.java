@@ -25,6 +25,7 @@ import com.google.android.gms.ads.reward.mediation.MediationRewardedVideoAdAdapt
 import com.google.android.gms.ads.reward.mediation.MediationRewardedVideoAdListener;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 
 import static android.util.Log.DEBUG;
@@ -51,6 +52,13 @@ public class ApplovinAdapter
 
     private boolean    fullyWatched;
     private RewardItem reward;
+
+    private static final String DEFAULT_ZONE = "";
+
+    // A map of Zone -> `AppLovinIncentivizedInterstitial` to be shared by instances of the custom event.
+    // This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `AppLovinIncentivizedInterstitial`)
+    // on every ad load regardless if ad was actually displayed or not.
+    private static final Map<String, AppLovinIncentivizedInterstitial> GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS = new HashMap<String, AppLovinIncentivizedInterstitial>();
 
     //
     // AdMob Custom Event Methods
@@ -96,15 +104,25 @@ public class ApplovinAdapter
         log( DEBUG, "Requesting AppLovin rewarded video with networkExtras: " + networkExtras );
 
         // Zones support is available on AppLovin SDK 4.5.0 and higher
+        final String zoneId = !TextUtils.isEmpty( serverParameters.getString( "parameter" ) ) ? serverParameters.getString( "parameter" ) : DEFAULT_ZONE;
 
-        if ( AppLovinSdk.VERSION_CODE >= 750 && serverParameters != null && !TextUtils.isEmpty( serverParameters.getString( "parameter" ) ) )
+        // Check if incentivized ad for zone already exists
+        if ( GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.containsKey( zoneId ) )
         {
-            final String zoneId = serverParameters.getString( "parameter" );
-            incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( this.context ) );
+            incentivizedInterstitial = GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.get( zoneId );
         }
         else
         {
-            incentivizedInterstitial = AppLovinIncentivizedInterstitial.create( this.context );
+            if ( AppLovinSdk.VERSION_CODE >= 750 && !TextUtils.isEmpty( zoneId ) )
+            {
+                incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( this.context ) );
+            }
+            else
+            {
+                incentivizedInterstitial = AppLovinIncentivizedInterstitial.create( this.context );
+            }
+
+            GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.put( zoneId, incentivizedInterstitial );
         }
 
         incentivizedInterstitial.preload( this );
