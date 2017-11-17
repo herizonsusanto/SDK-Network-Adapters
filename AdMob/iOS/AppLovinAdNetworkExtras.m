@@ -5,8 +5,8 @@
 //  Copyright © 2017 Applovin. All rights reserved.
 //
 
-#import "GADMAppLovinExtras.h"
+#import "AppLovinAdNetworkExtras.h"
 
-@implementation GADMAppLovinExtras
+@implementation AppLovinAdNetworkExtras
 
 @end
