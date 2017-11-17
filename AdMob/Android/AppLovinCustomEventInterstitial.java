@@ -5,7 +5,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinInterstitialAd;
@@ -85,7 +84,7 @@ public class AppLovinCustomEventInterstitial
         sdk.setPluginVersion( "AdMob-2.0" );
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
-        if ( AppLovinSdk.VERSION_CODE >= 750 && customEventExtras != null && !TextUtils.isEmpty( customEventExtras.getString( "zone_id" ) ) )
+        if ( AppLovinSdk.VERSION_CODE >= 750 && customEventExtras != null && customEventExtras.containsKey( "zone_id" ) )
         {
             zoneId = customEventExtras.getString( "zone_id" );
         }
