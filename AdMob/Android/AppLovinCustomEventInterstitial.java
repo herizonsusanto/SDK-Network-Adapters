@@ -24,6 +24,10 @@ import com.google.android.gms.ads.mediation.customevent.CustomEventInterstitial;
 import com.google.android.gms.ads.mediation.customevent.CustomEventInterstitialListener;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 
 import static android.util.Log.DEBUG;
 import static android.util.Log.ERROR;
@@ -41,12 +45,19 @@ public class AppLovinCustomEventInterstitial
         implements CustomEventInterstitial, AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
 {
     private static final boolean LOGGING_ENABLED = true;
-    private static final Handler uiHandler       = new Handler( Looper.getMainLooper() );
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
+    private static final String  DEFAULT_ZONE    = "";
+
+    // A map of Zone -> Queue of `AppLovinAd`s to be shared by instances of the custom event.
+    // This prevents skipping of ads as this adapter will be re-created and preloaded
+    // on every ad load regardless if ad was actually displayed or not.
+    private static final Map<String, Queue<AppLovinAd>> GLOBAL_INTERSTITIAL_ADS      = new HashMap<String, Queue<AppLovinAd>>();
+    private static final Object                         GLOBAL_INTERSTITIAL_ADS_LOCK = new Object();
 
     private Context                         context;
     private CustomEventInterstitialListener listener;
 
-    private AppLovinAd loadedAd;
+    private String zoneId; // The zone identifier this instance of the custom event is loading for
 
     //
     // AdMob Custom Event Methods
@@ -73,32 +84,45 @@ public class AppLovinCustomEventInterstitial
         final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
         sdk.setPluginVersion( "AdMob-2.0" );
 
+
         // Zones support is available on AppLovin SDK 7.5.0 and higher
-        final String zoneId = serverParameter;
-        if ( AppLovinSdk.VERSION_CODE >= 750 && !TextUtils.isEmpty( zoneId ) )
+        zoneId = !TextUtils.isEmpty( serverParameter ) ? serverParameter : DEFAULT_ZONE;
+
+        // Check if we already have a preloaded ad for the given zone
+        final AppLovinAd preloadedAd = dequeueAd( zoneId );
+        if ( preloadedAd != null )
         {
-            // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-            try
-            {
-                final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
-                method.invoke( sdk.getAdService(), zoneId, this );
-            }
-            catch ( Throwable th )
-            {
-                log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
-                listener.onAdFailedToLoad( AdRequest.ERROR_CODE_INVALID_REQUEST );
-            }
+            log( DEBUG, "Found preloaded ad for zone: {" + zoneId + "}" );
+            adReceived( preloadedAd );
         }
         else
         {
-            sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
+            if ( AppLovinSdk.VERSION_CODE >= 750 && !TextUtils.isEmpty( zoneId ) )
+            {
+                // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+                try
+                {
+                    final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
+                    method.invoke( sdk.getAdService(), zoneId, this );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
+                    listener.onAdFailedToLoad( AdRequest.ERROR_CODE_INVALID_REQUEST );
+                }
+            }
+            else
+            {
+                sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
+            }
         }
     }
 
     @Override
     public void showInterstitial()
     {
-        if ( loadedAd != null )
+        final AppLovinAd preloadedAd = dequeueAd( zoneId );
+        if ( preloadedAd != null )
         {
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
 
@@ -106,7 +130,7 @@ public class AppLovinCustomEventInterstitial
             interstitialAd.setAdDisplayListener( this );
             interstitialAd.setAdClickListener( this );
             interstitialAd.setAdVideoPlaybackListener( this );
-            interstitialAd.showAndRender( loadedAd );
+            interstitialAd.showAndRender( preloadedAd );
         }
         else
         {
@@ -133,7 +157,7 @@ public class AppLovinCustomEventInterstitial
     {
         log( DEBUG, "Interstitial did load ad: " + ad.getAdIdNumber() );
 
-        loadedAd = ad;
+        enqueueAd( ad, zoneId );
 
         runOnUiThread( new Runnable()
         {
@@ -211,6 +235,37 @@ public class AppLovinCustomEventInterstitial
     // Utility Methods
     //
 
+    private static AppLovinAd dequeueAd(final String zoneId)
+    {
+        synchronized ( GLOBAL_INTERSTITIAL_ADS_LOCK )
+        {
+            AppLovinAd preloadedAd = null;
+
+            final Queue<AppLovinAd> preloadedAds = GLOBAL_INTERSTITIAL_ADS.get( zoneId );
+            if ( preloadedAds != null && !preloadedAds.isEmpty() )
+            {
+                preloadedAd = preloadedAds.poll();
+            }
+
+            return preloadedAd;
+        }
+    }
+
+    private static void enqueueAd(final AppLovinAd ad, final String zoneId)
+    {
+        synchronized ( GLOBAL_INTERSTITIAL_ADS_LOCK )
+        {
+            Queue<AppLovinAd> preloadedAds = GLOBAL_INTERSTITIAL_ADS.get( zoneId );
+            if ( preloadedAds == null )
+            {
+                preloadedAds = new LinkedList<AppLovinAd>();
+                GLOBAL_INTERSTITIAL_ADS.put( zoneId, preloadedAds );
+            }
+
+            preloadedAds.offer( ad );
+        }
+    }
+
     private AppLovinInterstitialAdDialog createInterstitial(final Context context, final AppLovinSdk sdk)
     {
         AppLovinInterstitialAdDialog inter = null;
@@ -267,7 +322,7 @@ public class AppLovinCustomEventInterstitial
         }
         else
         {
-            uiHandler.post( runnable );
+            UI_HANDLER.post( runnable );
         }
     }
 }
