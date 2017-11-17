@@ -16,7 +16,7 @@
 
 // Convenience macro for checking if AppLovin SDK has support for zones
 #define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
-#define EMPTY_ZONE @""
+#define DEFAULT_ZONE @""
 
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
@@ -60,30 +60,40 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     if ( appLovinAdSize )
     {
         [[ALSdk shared] setPluginVersion: @"AdMob-2.3"];
-
+        
         CGSize size = CGSizeFromGADAdSize(adSize);
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
-        NSString *zoneIdentifier = request.additionalParameters[@"zone_id"];
-        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        NSString *zoneIdentifier;
+        if ( HAS_ZONES_SUPPORT && request.additionalParameters[@"zone_id"] )
         {
-            self.adView = ALGlobalAdViews[zoneIdentifier];
-            if ( !self.adView )
-            {
-                self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: zoneIdentifier];
-                ALGlobalAdViews[zoneIdentifier] = self.adView;
-            }
+            zoneIdentifier = request.additionalParameters[@"zone_id"];
         }
         else
         {
-            self.adView = ALGlobalAdViews[EMPTY_ZONE];
-            if ( !self.adView )
+            zoneIdentifier = DEFAULT_ZONE;
+        }
+        
+        
+        self.adView = ALGlobalAdViews[zoneIdentifier];
+        
+        // Check if we already have an ALAdView for the given zone
+        if ( !self.adView )
+        {
+            // If this is a default Zone, create the incentivized ad normally
+            if ( [DEFAULT_ZONE isEqualToString: zoneIdentifier] )
             {
                 self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
                                                          size: appLovinAdSize
                                                           sdk: [ALSdk shared]];
-                ALGlobalAdViews[EMPTY_ZONE] = self.adView;
             }
+            // Otherwise, use the Zones API
+            else
+            {
+                self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: zoneIdentifier];
+            }
+            
+            ALGlobalAdViews[zoneIdentifier] = self.adView;
         }
         
         AppLovinAdMobBannerDelegate *delegate = [[AppLovinAdMobBannerDelegate alloc] initWithCustomEvent: self];
