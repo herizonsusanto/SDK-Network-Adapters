@@ -1,4 +1,4 @@
-package com.applovin.mediation;
+package YOUR_PACKAGE_NAME;
 
 import android.os.Bundle;
 
