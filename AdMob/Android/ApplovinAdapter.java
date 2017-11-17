@@ -5,7 +5,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinIncentivizedInterstitial;
@@ -104,8 +103,15 @@ public class ApplovinAdapter
         log( DEBUG, "Requesting AppLovin rewarded video with networkExtras: " + networkExtras );
 
         // Zones support is available on AppLovin SDK 4.5.0 and higher
-        final String networkExtrasZoneId = networkExtras.getString( "zone_id" );
-        final String zoneId = !TextUtils.isEmpty( networkExtrasZoneId ) ? networkExtrasZoneId : DEFAULT_ZONE;
+        final String zoneId;
+        if ( networkExtras != null && networkExtras.containsKey( "zone_id" ) && AppLovinSdk.VERSION_CODE >= 750 )
+        {
+            zoneId = networkExtras.getString( "zone_id" );
+        }
+        else
+        {
+            zoneId = DEFAULT_ZONE;
+        }
 
         // Check if incentivized ad for zone already exists
         if ( GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.containsKey( zoneId ) )
@@ -114,13 +120,15 @@ public class ApplovinAdapter
         }
         else
         {
-            if ( AppLovinSdk.VERSION_CODE >= 750 && !TextUtils.isEmpty( zoneId ) )
-            {
-                incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( this.context ) );
-            }
-            else
+            // If this is a default Zone, create the incentivized ad normally
+            if ( DEFAULT_ZONE.equals( zoneId ) )
             {
                 incentivizedInterstitial = AppLovinIncentivizedInterstitial.create( this.context );
+            }
+            // Otherwise, use the Zones API
+            else
+            {
+                incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( this.context ) );
             }
 
             GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.put( zoneId, incentivizedInterstitial );

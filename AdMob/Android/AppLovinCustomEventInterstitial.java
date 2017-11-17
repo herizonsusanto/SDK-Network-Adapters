@@ -86,7 +86,7 @@ public class AppLovinCustomEventInterstitial
 
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
-        zoneId = !TextUtils.isEmpty( serverParameter ) ? serverParameter : DEFAULT_ZONE;
+        zoneId = ( !TextUtils.isEmpty( serverParameter ) && AppLovinSdk.VERSION_CODE >= 750 ) ? serverParameter : DEFAULT_ZONE;
 
         // Check if we already have a preloaded ad for the given zone
         final AppLovinAd preloadedAd = dequeueAd( zoneId );
@@ -97,7 +97,13 @@ public class AppLovinCustomEventInterstitial
         }
         else
         {
-            if ( AppLovinSdk.VERSION_CODE >= 750 && !TextUtils.isEmpty( zoneId ) )
+            // If this is a default Zone, create the incentivized ad normally
+            if ( DEFAULT_ZONE.equals( zoneId ) )
+            {
+                sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
+            }
+            // Otherwise, use the Zones API
+            else
             {
                 // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
                 try
@@ -110,10 +116,6 @@ public class AppLovinCustomEventInterstitial
                     log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
                     listener.onAdFailedToLoad( AdRequest.ERROR_CODE_INVALID_REQUEST );
                 }
-            }
-            else
-            {
-                sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
             }
         }
     }

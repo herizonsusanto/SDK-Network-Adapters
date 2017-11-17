@@ -90,7 +90,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     AppLovinAdNetworkExtras *extras = (AppLovinAdNetworkExtras *)self.connector.networkExtras;
-    NSString *zoneIdentifier = extras.zoneIdentifier ?: DEFAULT_ZONE;
+    NSString *zoneIdentifier = (extras.zoneIdentifier && HAS_ZONES_SUPPORT) ? extras.zoneIdentifier : DEFAULT_ZONE;
     
     // Check if incentivized ad for zone already exists
     if ( ALGlobalIncentivizedInterstitialAds[zoneIdentifier] )
@@ -99,13 +99,15 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     }
     else
     {
-        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
-        {
-            self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
-        }
-        else
+        // If this is a default Zone, create the incentivized ad normally
+        if ( [DEFAULT_ZONE isEqualToString: zoneIdentifier] )
         {
             self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+        }
+        // Otherwise, use the Zones API
+        else
+        {
+            self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
         }
         
         ALGlobalIncentivizedInterstitialAds[zoneIdentifier] = self.incent;
