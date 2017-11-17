@@ -8,6 +8,7 @@
 //
 
 #import "GADMAdapterAppLovinRewardBasedVideoAd.h"
+#import "GADMAppLovinExtras.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
@@ -60,7 +61,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 
 + (Class<GADAdNetworkExtras>)networkExtrasClass
 {
-    return [GADCustomEventExtras class];
+    return [GADMAppLovinExtras class];
 }
 
 - (instancetype)initWithRewardBasedVideoAdNetworkConnector:(id<GADMRewardBasedVideoAdNetworkConnector>)connector
@@ -89,8 +90,9 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     [[ALSdk shared] setPluginVersion: adapterVersion];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    NSString *zoneIdentifier = self.connector.credentials[@"parameter"] ?: DEFAULT_ZONE;
-    
+    GADMAppLovinExtras *extras = _connector.networkExtras;
+    NSString *zoneIdentifier   = extras.zoneID ?: DEFAULT_ZONE;
+
     // Check if incentivized ad for zone already exists
     if ( ALGlobalIncentivizedInterstitialAds[zoneIdentifier] )
     {
@@ -98,7 +100,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     }
     else
     {
-        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        if ( HAS_ZONES_SUPPORT && zoneIdentifier && zoneIdentifier.length > 0 )
         {
             self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
         }
