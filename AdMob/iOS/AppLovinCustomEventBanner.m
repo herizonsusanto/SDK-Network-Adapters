@@ -65,7 +65,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier = serverParameter;
-        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        if ( HAS_ZONES_SUPPORT && zoneIdentifier && zoneIdentifier.length > 0 )
         {
             self.adView = ALGlobalAdViews[zoneIdentifier];
             if ( !self.adView )

@@ -104,7 +104,7 @@ public class ApplovinAdapter
         log( DEBUG, "Requesting AppLovin rewarded video with networkExtras: " + networkExtras );
 
         // Zones support is available on AppLovin SDK 4.5.0 and higher
-        final String zoneId = !TextUtils.isEmpty( serverParameters.getString( "parameter" ) ) ? serverParameters.getString( "parameter" ) : DEFAULT_ZONE;
+        final String zoneId = !TextUtils.isEmpty( networkExtras.getString( "zone_id" ) ) ? networkExtras.getString( "zone_id" ) : DEFAULT_ZONE;
 
         // Check if incentivized ad for zone already exists
         if ( GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.containsKey( zoneId ) )
