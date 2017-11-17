@@ -64,7 +64,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         CGSize size = CGSizeFromGADAdSize(adSize);
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
-        NSString *zoneIdentifier = serverParameter;
+        NSString *zoneIdentifier = request.additionalParameters[@"zone_id"];
         if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
         {
             self.adView = ALGlobalAdViews[zoneIdentifier];

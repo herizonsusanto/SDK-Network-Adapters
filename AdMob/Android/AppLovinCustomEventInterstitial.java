@@ -84,9 +84,15 @@ public class AppLovinCustomEventInterstitial
         final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
         sdk.setPluginVersion( "AdMob-2.0" );
 
-
         // Zones support is available on AppLovin SDK 7.5.0 and higher
-        zoneId = ( !TextUtils.isEmpty( serverParameter ) && AppLovinSdk.VERSION_CODE >= 750 ) ? serverParameter : DEFAULT_ZONE;
+        if ( AppLovinSdk.VERSION_CODE >= 750 && customEventExtras != null && !TextUtils.isEmpty( customEventExtras.getString( "zone_id" ) ) )
+        {
+            zoneId = customEventExtras.getString( "zone_id" );
+        }
+        else
+        {
+            zoneId = DEFAULT_ZONE;
+        }
 
         // Check if we already have a preloaded ad for the given zone
         final AppLovinAd preloadedAd = dequeueAd( zoneId );
