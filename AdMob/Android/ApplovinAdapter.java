@@ -42,7 +42,7 @@ public class ApplovinAdapter
         AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
     private static final boolean LOGGING_ENABLED = true;
-    private static final Handler uiHandler       = new Handler( Looper.getMainLooper() );
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
 
     private boolean initialized;
 
@@ -411,7 +411,7 @@ public class ApplovinAdapter
         }
         else
         {
-            uiHandler.post( runnable );
+            UI_HANDLER.post( runnable );
         }
     }
 }

@@ -6,6 +6,10 @@ import android.os.Bundle;
  * Created by joshgleeson on 11/15/17.
  */
 
+
+/**
+ * Helper class to create the `Bundle` containing various parameters to be passed into the request object for AppLovin.
+ */
 public final class AppLovinNetworkExtrasBuilder
 {
     private static final String KEY_ZONE_ID = "zone_id";
