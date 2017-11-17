@@ -8,7 +8,6 @@
 //
 
 #import "GADMAdapterAppLovinRewardBasedVideoAd.h"
-#import "AppLovinAdNetworkExtras.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
@@ -300,5 +299,9 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         return kGADErrorInternalError;
     }
 }
+
+@end
+
+@implementation AppLovinAdNetworkExtras
 
 @end
