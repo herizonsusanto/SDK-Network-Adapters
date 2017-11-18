@@ -102,7 +102,7 @@ public class AppLovinCustomEventInterstitial
         }
         else
         {
-            // If this is a default Zone, create the incentivized ad normally
+            // If this is a default Zone, load the interstitial ad normally
             if ( DEFAULT_ZONE.equals( zoneId ) )
             {
                 sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );

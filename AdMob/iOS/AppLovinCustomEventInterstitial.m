@@ -25,7 +25,7 @@
 
 @interface AppLovinCustomEventInterstitial() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 @property (nonatomic, strong) ALInterstitialAd *interstitialAd;
-@property (nonatomic, copy) NSString *zoneIdentifier; // The zone identifier this instance of the custom event is loading for
+@property (nonatomic,   copy) NSString *zoneIdentifier; // The zone identifier this instance of the custom event is loading for
 @end
 
 @implementation AppLovinCustomEventInterstitial
@@ -78,20 +78,18 @@ static NSObject *ALGlobalInterstitialAdsLock;
     // No ad currently preloaded
     else
     {
-        ALAdService *adService = [ALSdk shared].adService;
-        
         // If this is a default Zone, create the incentivized ad normally
         if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
         {
-            [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+            [[ALSdk shared].adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
         }
         // Otherwise, use the Zones API
         else
         {
             // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-            [adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
-                            withObject: self.zoneIdentifier
-                            withObject: self];
+            [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
+                                           withObject: self.zoneIdentifier
+                                           withObject: self];
         }
     }
 }
