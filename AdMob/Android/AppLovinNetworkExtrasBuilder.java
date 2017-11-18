@@ -1,4 +1,4 @@
-package AdMob.Android;
+package YOUR_PACKAGE_NAME;
 
 import android.os.Bundle;
 
