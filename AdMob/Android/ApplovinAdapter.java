@@ -102,7 +102,7 @@ public class ApplovinAdapter
     {
         log( DEBUG, "Requesting AppLovin rewarded video with networkExtras: " + networkExtras );
 
-        // Zones support is available on AppLovin SDK 4.5.0 and higher
+        // Zones support is available on AppLovin SDK 7.5.0 and higher
         final String zoneId;
         if ( networkExtras != null && networkExtras.containsKey( "zone_id" ) && AppLovinSdk.VERSION_CODE >= 750 )
         {
