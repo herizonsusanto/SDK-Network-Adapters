@@ -1,13 +1,10 @@
-package YOUR_PACKAGE_NAME;
+package AdMob.Android;
 
 import android.os.Bundle;
 
 /**
  * Created by joshgleeson on 11/15/17.
- */
-
-
-/**
+ * <p>
  * Helper class to create the `Bundle` containing various parameters to be passed into the request object for AppLovin.
  */
 public final class AppLovinNetworkExtrasBuilder
