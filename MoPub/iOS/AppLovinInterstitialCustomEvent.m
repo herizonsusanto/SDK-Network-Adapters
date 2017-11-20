@@ -17,11 +17,12 @@
 
 // Convenience macro for checking if AppLovin SDK has support for zones
 #define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define DEFAULT_ZONE @""
 
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
 @property (nonatomic, strong) ALInterstitialAd *interstitialAd;
-@property (nonatomic, strong) ALAd *loadedAd;
+@property (nonatomic,   copy) NSString *zoneIdentifier; // The zone identifier this instance of the custom event is loading for
 
 @end
 
@@ -29,6 +30,22 @@
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
+
+// A dictionary of Zone -> Queue of `ALAd`s to be shared by instances of the custom event.
+// This prevents skipping of ads as this adapter will be re-created and preloaded
+// on every ad load regardless if ad was actually displayed or not.
+static NSMutableDictionary<NSString *, NSMutableArray<ALAd *> *> *ALGlobalInterstitialAds;
+static NSObject *ALGlobalInterstitialAdsLock;
+
+#pragma mark - Class Initialization
+
++ (void)initialize
+{
+    [super initialize];
+    
+    ALGlobalInterstitialAds = [NSMutableDictionary dictionary];
+    ALGlobalInterstitialAdsLock = [[NSObject alloc] init];
+}
 
 #pragma mark - MPInterstitialCustomEvent Overridden Methods
 
@@ -38,31 +55,52 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
     
-    ALAdService *adService = [ALSdk shared].adService;
-    
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    NSString *zoneIdentifier = info[@"zone_id"];
-    if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+    if ( HAS_ZONES_SUPPORT && info[@"zone_id"] )
     {
-        // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-        [adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
-                        withObject: zoneIdentifier
-                        withObject: self];
+        self.zoneIdentifier = info[@"zone_id"];
     }
     else
     {
-        [adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+        self.zoneIdentifier = DEFAULT_ZONE;
+    }
+    
+    
+    // Check if we already have a preloaded ad for the given zone
+    ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
+    if ( preloadedAd )
+    {
+        [self log: @"Found preloaded ad for zone: {%@}", self.zoneIdentifier];
+        [self adService: [ALSdk shared].adService didLoadAd: preloadedAd];
+    }
+    // No ad currently preloaded
+    else
+    {
+        // If this is a default Zone, create the incentivized ad normally
+        if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
+        {
+            [[ALSdk shared].adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+        }
+        // Otherwise, use the Zones API
+        else
+        {
+            // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+            [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
+                                           withObject: self.zoneIdentifier
+                                           withObject: self];
+        }
     }
 }
 
 - (void)showInterstitialFromRootViewController:(UIViewController *)rootViewController
 {
-    if ( self.loadedAd )
+    ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
+    if ( preloadedAd )
     {
         self.interstitialAd = [[ALInterstitialAd alloc] initWithSdk: [ALSdk shared]];
         self.interstitialAd.adDisplayDelegate = self;
         self.interstitialAd.adVideoPlaybackDelegate = self;
-        [self.interstitialAd showOver: rootViewController.view.window andRender: self.loadedAd];
+        [self.interstitialAd showOver: rootViewController.view.window andRender: preloadedAd];
     }
     else
     {
@@ -82,7 +120,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [self log: @"Interstitial did load ad: %@", ad.adIdNumber];
     
-    self.loadedAd = ad;
+    [[self class] enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
     
     [self.delegate interstitialCustomEvent: self didLoadAd: ad];
 }
@@ -140,6 +178,38 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 }
 
 #pragma mark - Utility Methods
+
++ (alnullable ALAd *)dequeueAdForZoneIdentifier:(NSString *)zoneIdentifier
+{
+    @synchronized ( ALGlobalInterstitialAdsLock )
+    {
+        ALAd *preloadedAd;
+        
+        NSMutableArray<ALAd *> *preloadedAds = ALGlobalInterstitialAds[zoneIdentifier];
+        if ( preloadedAds.count > 0 )
+        {
+            preloadedAd = preloadedAds[0];
+            [preloadedAds removeObjectAtIndex: 0];
+        }
+        
+        return preloadedAd;
+    }
+}
+
++ (void)enqueueAd:(ALAd *)ad forZoneIdentifier:(NSString *)zoneIdentifier
+{
+    @synchronized ( ALGlobalInterstitialAdsLock )
+    {
+        NSMutableArray<ALAd *> *preloadedAds = ALGlobalInterstitialAds[zoneIdentifier];
+        if ( !preloadedAds )
+        {
+            preloadedAds = [NSMutableArray array];
+            ALGlobalInterstitialAds[zoneIdentifier] = preloadedAds;
+        }
+        
+        [preloadedAds addObject: ad];
+    }
+}
 
 - (void)log:(NSString *)format, ...
 {
