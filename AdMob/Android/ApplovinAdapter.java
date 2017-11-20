@@ -103,7 +103,7 @@ public class ApplovinAdapter
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
         final String zoneId;
-        if ( networkExtras != null && networkExtras.containsKey( "zone_id" ) && AppLovinSdk.VERSION_CODE >= 750 )
+        if ( AppLovinSdk.VERSION_CODE >= 750 && networkExtras != null && networkExtras.containsKey( "zone_id" ) )
         {
             zoneId = networkExtras.getString( "zone_id" );
         }
