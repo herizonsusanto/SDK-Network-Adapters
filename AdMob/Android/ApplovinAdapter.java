@@ -42,6 +42,12 @@ public class ApplovinAdapter
 {
     private static final boolean LOGGING_ENABLED = true;
     private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
+    private static final String  DEFAULT_ZONE    = "";
+
+    // A map of Zone -> `AppLovinIncentivizedInterstitial` to be shared by instances of the custom event.
+    // This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `AppLovinIncentivizedInterstitial`)
+    // on every ad load regardless if ad was actually displayed or not.
+    private static final Map<String, AppLovinIncentivizedInterstitial> GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS = new HashMap<String, AppLovinIncentivizedInterstitial>();
 
     private boolean initialized;
 
@@ -51,13 +57,6 @@ public class ApplovinAdapter
 
     private boolean    fullyWatched;
     private RewardItem reward;
-
-    private static final String DEFAULT_ZONE = "";
-
-    // A map of Zone -> `AppLovinIncentivizedInterstitial` to be shared by instances of the custom event.
-    // This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `AppLovinIncentivizedInterstitial`)
-    // on every ad load regardless if ad was actually displayed or not.
-    private static final Map<String, AppLovinIncentivizedInterstitial> GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS = new HashMap<String, AppLovinIncentivizedInterstitial>();
 
     //
     // AdMob Custom Event Methods
