@@ -3,7 +3,6 @@ package YOUR_PACKAGE_NAME;
 import android.app.Activity;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinIncentivizedInterstitial;
@@ -22,6 +21,7 @@ import com.mopub.mobileads.MoPubErrorCode;
 import com.mopub.mobileads.MoPubRewardedVideoManager;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 
 import static android.util.Log.DEBUG;
@@ -41,6 +41,12 @@ public class AppLovinCustomEventRewardedVideo
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final String  DEFAULT_ZONE    = "";
+
+    // A map of Zone -> `AppLovinIncentivizedInterstitial` to be shared by instances of the custom event.
+    // This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `AppLovinIncentivizedInterstitial`)
+    // on every ad load regardless if ad was actually displayed or not.
+    private static final Map<String, AppLovinIncentivizedInterstitial> GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS = new HashMap<String, AppLovinIncentivizedInterstitial>();
 
     private static boolean initialized;
 
@@ -49,6 +55,7 @@ public class AppLovinCustomEventRewardedVideo
 
     private boolean     fullyWatched;
     private MoPubReward reward;
+
 
     //
     // MoPub Custom Event Methods
@@ -79,15 +86,37 @@ public class AppLovinCustomEventRewardedVideo
 
         parentActivity = activity;
 
-        // Zones support is available on AppLovin SDK 4.5.0 and higher
-        if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && !TextUtils.isEmpty( serverExtras.get( "zone_id" ) ) )
+        // Zones support is available on AppLovin SDK 7.5.0 and higher
+        final String zoneId;
+        if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
         {
-            final String zoneId = serverExtras.get( "zone_id" );
-            incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( activity ) );
+            zoneId = serverExtras.get( "zone_id" );
         }
         else
         {
-            incentivizedInterstitial = AppLovinIncentivizedInterstitial.create( activity );
+            zoneId = DEFAULT_ZONE;
+        }
+
+
+        // Check if incentivized ad for zone already exists
+        if ( GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.containsKey( zoneId ) )
+        {
+            incentivizedInterstitial = GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.get( zoneId );
+        }
+        else
+        {
+            // If this is a default Zone, create the incentivized ad normally
+            if ( DEFAULT_ZONE.equals( zoneId ) )
+            {
+                incentivizedInterstitial = AppLovinIncentivizedInterstitial.create( activity );
+            }
+            // Otherwise, use the Zones API
+            else
+            {
+                incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( activity ) );
+            }
+
+            GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.put( zoneId, incentivizedInterstitial );
         }
 
         incentivizedInterstitial.preload( this );
