@@ -73,6 +73,8 @@ static NSObject *ALGlobalAdViewAdsLock;
     {
         [[ALSdk shared] setPluginVersion: @"AdMob-2.3"];
         
+        CGSize size = CGSizeFromGADAdSize(adSize);
+        
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         if ( HAS_ZONES_SUPPORT && request.additionalParameters[@"zone_id"] )
         {
@@ -89,7 +91,19 @@ static NSObject *ALGlobalAdViewAdsLock;
         // Check if we already have an ALAdView for the given zone
         if ( !self.adView )
         {
-            self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: self.zoneIdentifier];
+            // If this is a default Zone, create the incentivized ad normally
+            if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
+            {
+                self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
+                                                         size: appLovinAdSize
+                                                          sdk: [ALSdk shared]];
+            }
+            // Otherwise, use the Zones API
+            else
+            {
+                self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: self.zoneIdentifier];
+            }
+            
             ALGlobalAdViews[self.zoneIdentifier] = self.adView;
         }
         
