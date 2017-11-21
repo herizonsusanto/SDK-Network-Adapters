@@ -21,12 +21,12 @@
 /**
  * The receiver object of the ALAdView's and ALAdService's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
-@interface AppLovinAdMobBannerDelegate : NSObject<ALAdLoadDelegate, ALAdDisplayDelegate>
+@interface AppLovinAdMobBannerDelegate : NSObject<ALAdDisplayDelegate>
 @property (nonatomic, weak) AppLovinCustomEventBanner *parentCustomEvent;
 - (instancetype)initWithCustomEvent:(AppLovinCustomEventBanner *)parentCustomEvent;
 @end
 
-@interface AppLovinCustomEventBanner()
+@interface AppLovinCustomEventBanner()<ALAdLoadDelegate>
 @property (nonatomic, strong) ALAdView *adView;
 @property (nonatomic,   copy) NSString *zoneIdentifier; // The zone identifier this instance of the custom event is loading for
 @end
@@ -113,7 +113,7 @@ static NSObject *ALGlobalAdViewAdsLock;
         // If this is a default Zone, create the incentivized ad normally
         if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
         {
-            [[ALSdk shared].adService loadNextAd: appLovinAdSize andNotify: delegate];
+            [[ALSdk shared].adService loadNextAd: appLovinAdSize andNotify: self];
         }
         // Otherwise, use the Zones API
         else
@@ -121,7 +121,7 @@ static NSObject *ALGlobalAdViewAdsLock;
             // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
             [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
                                            withObject: self.zoneIdentifier
-                                           withObject: delegate];
+                                           withObject: self];
         }
     }
     else
@@ -131,6 +131,66 @@ static NSObject *ALGlobalAdViewAdsLock;
         NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
                                              code: kGADErrorMediationInvalidAdSize
                                          userInfo: nil];
+        [self.delegate customEventBanner: self didFailAd: error];
+    }
+}
+
+
+#pragma mark - AppLovin Ad Load Delegate
+
+- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
+{
+    [self log: @"Banner did load ad: %@", ad.adIdNumber];
+    
+    if ( !self.adView.window )
+    {
+        [AppLovinCustomEventBanner enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
+    }
+    else
+    {
+        // Check if we have enqueued ad already
+        ALAd *enqueuedAd = [AppLovinCustomEventBanner dequeueAdForZoneIdentifier: self.zoneIdentifier];
+        if ( enqueuedAd )
+        {
+            [self.adView render: enqueuedAd];
+            [AppLovinCustomEventBanner enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
+        }
+        // No enqueued ad, render newly loaded ad
+        else
+        {
+            [self.adView render: ad];
+        }
+    }
+    
+    [self.delegate customEventBanner: self didReceiveAd: self.adView];
+}
+
+- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
+{
+    [self log: @"Banner failed to load with error: %d", code];
+    
+    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                         code: [self toAdMobErrorCode: code]
+                                     userInfo: nil];
+    
+    // If CURRENT ad request was a no fill, check against enqueued ads
+    if ( code == kALErrorCodeNoFill )
+    {
+        ALAd *preloadedAd = [AppLovinCustomEventBanner dequeueAdForZoneIdentifier: self.zoneIdentifier];
+        
+        // There is an enqueued ad, use that
+        if ( preloadedAd )
+        {
+            [self log: @"Using enqueued ad instead..."];
+            [self adService: adService didLoadAd: preloadedAd];
+        }
+        else
+        {
+            [self.delegate customEventBanner: self didFailAd: error];
+        }
+    }
+    else
+    {
         [self.delegate customEventBanner: self didFailAd: error];
     }
 }
@@ -290,56 +350,6 @@ static NSObject *ALGlobalAdViewAdsLock;
         self.parentCustomEvent = parentCustomEvent;
     }
     return self;
-}
-
-#pragma mark - AppLovin Ad Load Delegate
-
-- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
-{
-    [self.parentCustomEvent log: @"Banner did load ad: %@", ad.adIdNumber];
-    
-    ALAdView *adView = self.parentCustomEvent.adView;
-    
-    if ( !adView.window )
-    {
-        [AppLovinCustomEventBanner enqueueAd: ad forZoneIdentifier: self.parentCustomEvent.zoneIdentifier];
-    }
-    else
-    {
-        [adView render: ad];
-    }
-    
-    [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didReceiveAd: adView];
-}
-
-- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
-{
-    [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
-    
-    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
-                                         code: [self.parentCustomEvent toAdMobErrorCode: code]
-                                     userInfo: nil];
-    
-    // If CURRENT ad request was a no fill, check against enqueued ads
-    if ( code == kALErrorCodeNoFill )
-    {
-        ALAd *preloadedAd = [AppLovinCustomEventBanner dequeueAdForZoneIdentifier: self.parentCustomEvent.zoneIdentifier];
-        
-        // There is an enqueued ad, use that
-        if ( preloadedAd )
-        {
-            [self.parentCustomEvent log: @"Using enqueued ad instead..."];
-            [self adService: adService didLoadAd: preloadedAd];
-        }
-        else
-        {
-            [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didFailAd: error];
-        }
-    }
-    else
-    {
-        [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didFailAd: error];
-    }
 }
 
 #pragma mark - Ad Display Delegate
