@@ -349,7 +349,7 @@ static NSObject *ALGlobalAdViewAdsLock;
     {
         NSString *zoneIdentifier = ( HAS_ZONES_SUPPORT && self.zoneIdentifier ) ? self.zoneIdentifier : DEFAULT_ZONE;
         
-        ALAd *preloadedAd = [AppLovinBannerCustomEvent dequeueAdForZoneIdentifier: self.zoneIdentifier];
+        ALAd *preloadedAd = [AppLovinBannerCustomEvent dequeueAdForZoneIdentifier: zoneIdentifier];
         if ( preloadedAd )
         {
             [self render: preloadedAd];
