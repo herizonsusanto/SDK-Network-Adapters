@@ -6,25 +6,38 @@
 #
 #  This script is used to build the underlying JAR, for publishers using Unity.
 #
-#  It takes in 2 arguments -
-#    1. The SDK version number
-#    2. The output directory
+#  It takes in 3 arguments -
+#    1. The path to the Android SDK JAR.
+#    2. The path to the AppLovin SDK JAR.
+#    3. The path to the AdMob SDK JAR.
 #
-#  Flags -
-#    -o - Opens the output directory upon completion.
-#
-#  Example Usage: ./build.sh 4.2.0 /Users/thomasso/AppLovin/SDK-iOS/build/ -o
+#  Example Usage: ./build.sh {ANDROID_SDK_JAR} {APPLOVIN_SDK_JAR} {ADMOB_SDK_JAR}
 #
 
+# Input parameters check
+if [ "$#" -lt 3 ]; then
+    echo "Invalid number of parameters"
+    exit 1
+fi
+
+# Assign parameters
+ANDROID_SDK_JAR=$1
+APPLOVIN_SDK_JAR=$2
+ADMOB_SDK_JAR=$3
+
+# Create build folder
 mkdir ../build/
 
+# Compile source files into build folder
 javac -classpath \
-"/Users/thomasso/Downloads/applovin-sdk-7.5.0.jar:/Users/thomasso/Library/Android/sdk/platforms/android-25/android.jar:/Users/thomasso/.android/build-cache/3422b6b464c555dcab548a53f71e06fbcfe6e63b/output/jars/classes.jar:/Users/thomasso/Downloads/admob.jar" \
+    "${ANDROID_SDK_JAR}:${APPLOVIN_SDK_JAR}:${ADMOB_SDK_JAR}" \
     -source 1.7 \
     -target 1.7 \
     -d ../build/ \
     ../*.java
 
+# Package compiled files into JAR
 jar cvf applovin-admob-adapter.jar ../build/*
 
+# Clean up build folder
 rm -R ../build/
