@@ -1,8 +1,10 @@
-package YOUR_PACKAGE_NAME;
+package AdMob.Android;
 
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinAdView;
@@ -36,25 +38,22 @@ import static android.util.Log.ERROR;
  */
 
 public class AppLovinCustomEventBanner
-        implements CustomEventBanner
+        implements CustomEventBanner, AppLovinAdLoadListener
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
     private static final String  DEFAULT_ZONE    = "";
-
 
     private static final int BANNER_STANDARD_HEIGHT         = 50;
     private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
-
-    private CustomEventBannerListener customEventBannerListener;
-
-    // A dictionary of Zone -> `AppLovinAdView` to be shared by instances of the custom event to prevent redundant recreation of our `AppLovinAdView`s.
-    private static final Map<String, AppLovinAdView> GLOBAL_AD_VIEWS = new HashMap<String, AppLovinAdView>();
 
     // A dictionary of Zone -> Queue of `AppLovinAd`s to be shared by instances of the custom event.
     // This prevents skipping of ads as this adapter will be re-created and preloaded
     // on every ad load regardless if ad was actually displayed or not.
     private static final Map<String, Queue<AppLovinAd>> GLOBAL_AD_VIEW_ADS      = new HashMap<String, Queue<AppLovinAd>>();
     private static final Object                         GLOBAL_AD_VIEW_ADS_LOCK = new Object();
+
+    private CustomEventBannerListener customEventBannerListener;
 
     private AppLovinAdView adView;
     private String         zoneId; // The zone identifier this instance of the custom event is loading for
@@ -95,35 +94,36 @@ public class AppLovinCustomEventBanner
                 zoneId = DEFAULT_ZONE;
             }
 
-            adView = GLOBAL_AD_VIEWS.get( zoneId );
-            if ( adView == null )
-            {
-                adView = createAdView( zoneId, appLovinAdSize, context, customEventBannerListener );
-                GLOBAL_AD_VIEWS.put( zoneId, adView );
-            }
+            zoneId = "zone_Id";
 
-            final AppLovinAdMobBannerListener listener = new AppLovinAdMobBannerListener();
-            adView.setAdDisplayListener( listener );
-            adView.setAdClickListener( listener );
+            adView = createAdView( zoneId, appLovinAdSize, context, customEventBannerListener );
 
-            // If this is a default Zone, load the ad normally
-            if ( DEFAULT_ZONE.equals( zoneId ) )
+            // Already have a preloaded ad
+            if ( hasEnqueuedAd( zoneId ) )
             {
-                AppLovinSdk.getInstance( context ).getAdService().loadNextAd( appLovinAdSize, listener );
+                customEventBannerListener.onAdLoaded( adView );
             }
-            // Otherwise, use the Zones API
             else
             {
-                // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-                try
+                // If this is a default Zone, load the ad normally
+                if ( DEFAULT_ZONE.equals( zoneId ) )
                 {
-                    final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
-                    method.invoke( sdk.getAdService(), zoneId, listener );
+                    AppLovinSdk.getInstance( context ).getAdService().loadNextAd( appLovinAdSize, this );
                 }
-                catch ( Throwable th )
+                // Otherwise, use the Zones API
+                else
                 {
-                    log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
-                    customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_INVALID_REQUEST );
+                    // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+                    try
+                    {
+                        final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
+                        method.invoke( sdk.getAdService(), zoneId, this );
+                    }
+                    catch ( Throwable th )
+                    {
+                        log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
+                        customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_INVALID_REQUEST );
+                    }
                 }
             }
         }
@@ -150,8 +150,79 @@ public class AppLovinCustomEventBanner
     }
 
     //
+    // Ad Load Listener
+    //
+
+    @Override
+    public void adReceived(final AppLovinAd ad)
+    {
+        // AdMob requires `onAdLoaded()` and `onAdFailedToLoad()` callbacks to be called on main queue
+        UI_HANDLER.post( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                log( DEBUG, "Successfully loaded banner ad" );
+
+                if ( !adView.isAttachedToWindow() )
+                {
+                    log( DEBUG, "Enqueuing loaded ad..." );
+                    enqueueAd( ad, zoneId );
+                }
+                else
+                {
+                    log( DEBUG, "Rendering loaded ad..." );
+                    adView.renderAd( ad );
+                }
+
+                customEventBannerListener.onAdLoaded( adView );
+            }
+        } );
+    }
+
+    @Override
+    public void failedToReceiveAd(final int errorCode)
+    {
+        // AdMob requires `onAdLoaded()` and `onAdFailedToLoad()` callbacks to be called on main queue
+        UI_HANDLER.post( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                log( ERROR, "Failed to load banner ad with code: " + errorCode );
+
+                // If CURRENT ad request was a no fill, check against enqueued ads
+                if ( errorCode == AppLovinErrorCodes.NO_FILL )
+                {
+                    final AppLovinAd preloadedAd = dequeueAd( zoneId );
+
+                    // There is an enqueued ad, use that
+                    if ( preloadedAd != null )
+                    {
+                        log( DEBUG, "Using enqueued ad instead..." );
+                        adReceived( preloadedAd );
+
+                        return;
+                    }
+                }
+
+                customEventBannerListener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
+            }
+        } );
+    }
+
+    //
     // Utility Methods
     //
+
+    private static boolean hasEnqueuedAd(final String zoneId)
+    {
+        synchronized ( GLOBAL_AD_VIEW_ADS_LOCK )
+        {
+            final Queue<AppLovinAd> preloadedAds = GLOBAL_AD_VIEW_ADS.get( zoneId );
+            return preloadedAds != null && !preloadedAds.isEmpty();
+        }
+    }
 
     private static AppLovinAd dequeueAd(final String zoneId)
     {
@@ -204,15 +275,17 @@ public class AppLovinCustomEventBanner
             else
             {
                 // Dynamically create an instance of AppLovinAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
-                constructor = AppLovinAdMobAdView.class.getConstructor( AppLovinAdSize.class, String.class, contextClass );
-                adView = (AppLovinAdMobAdView) constructor.newInstance( size, zoneId, parentContext );
+                constructor = AppLovinAdMobAdView.class.getConstructor( getClass(), AppLovinAdSize.class, String.class, contextClass );
+                adView = (AppLovinAdMobAdView) constructor.newInstance( this, size, zoneId, parentContext );
             }
 
-            adView.setZoneId( zoneId );
+            final AppLovinAdMobBannerListener listener = new AppLovinAdMobBannerListener();
+            adView.setAdDisplayListener( listener );
+            adView.setAdClickListener( listener );
         }
         catch ( Throwable th )
         {
-            log( ERROR, "Unable to get create AppLovinAdView." );
+            log( ERROR, "Unable to create AppLovinAdView. Because of: " + Log.getStackTraceString( th ) );
             customEventBannerListener.onAdFailedToLoad( AdRequest.ERROR_CODE_INTERNAL_ERROR );
         }
 
@@ -275,52 +348,8 @@ public class AppLovinCustomEventBanner
      * The receiver object of the AppLovinAdView's and AppLovinAdService's listeners.
      */
     private class AppLovinAdMobBannerListener
-            implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener
+            implements AppLovinAdDisplayListener, AppLovinAdClickListener
     {
-        @Override
-        public void adReceived(final AppLovinAd ad)
-        {
-            log( DEBUG, "Successfully loaded banner ad" );
-
-            if ( !adView.isAttachedToWindow() )
-            {
-                enqueueAd( ad, zoneId );
-            }
-            else
-            {
-                adView.renderAd( ad );
-            }
-
-            customEventBannerListener.onAdLoaded( adView );
-        }
-
-        @Override
-        public void failedToReceiveAd(final int errorCode)
-        {
-            log( ERROR, "Failed to load banner ad with code: " + errorCode );
-
-            // If CURRENT ad request was a no fill, check against enqueued ads
-            if ( errorCode == AppLovinErrorCodes.NO_FILL )
-            {
-                final AppLovinAd preloadedAd = dequeueAd( zoneId );
-
-                // There is an enqueued ad, use that
-                if ( preloadedAd != null )
-                {
-                    log( DEBUG, "Using enqueued ad instead..." );
-                    adReceived( preloadedAd );
-                }
-                else
-                {
-                    customEventBannerListener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
-                }
-            }
-            else
-            {
-                customEventBannerListener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
-            }
-        }
-
         @Override
         public void adDisplayed(final AppLovinAd ad)
         {
@@ -346,14 +375,20 @@ public class AppLovinCustomEventBanner
     /**
      * This subclass provides a way to have an `AppLovinAdView` to dynamically render an enqueued ad WHEN needed.
      */
-    private static class AppLovinAdMobAdView
+    public class AppLovinAdMobAdView
             extends AppLovinAdView
     {
-        private String zoneId;
-
         private AppLovinAdMobAdView(final AppLovinAdSize adSize, final Context context)
         {
-            super( adSize, context );
+            this( adSize, DEFAULT_ZONE, context );
+        }
+
+        public AppLovinAdMobAdView(final AppLovinAdSize adSize, final String zoneId, final Context context)
+        {
+            // TODO: Make dynamic
+            super( adSize, zoneId, context );
+
+            // To prevent weird AdMob case where it quickly sets visibility to GONE _after_ attaching to window and displaying ad, causing us to render an empty ad
             setAutoDestroy( false );
         }
 
@@ -362,30 +397,25 @@ public class AppLovinCustomEventBanner
         {
             super.onAttachedToWindow();
 
+            log( DEBUG, "AppLovinAdView attached to window" );
+
+            // Create and attach listener when needed, to prevent accidental callback firing
+            //            final AppLovinAdMobBannerListener listener = new AppLovinAdMobBannerListener();
+            //            setAdDisplayListener( listener );
+            //            setAdClickListener( listener );
+
             final AppLovinAd preloadedAd = dequeueAd( zoneId );
             if ( preloadedAd != null )
             {
+                log( DEBUG, "Rendering enqueued ad..." );
                 renderAd( preloadedAd );
             }
             // Something is wrong... no preloaded ad provided... manually load an ad if none provided
             else
             {
+                log( DEBUG, "Loading new ad..." );
                 loadNextAd();
             }
-        }
-
-        @Override
-        protected void onDetachedFromWindow()
-        {
-            super.onDetachedFromWindow();
-
-            // Activity has been dismissed
-            GLOBAL_AD_VIEWS.clear();
-        }
-
-        private void setZoneId(final String zoneId)
-        {
-            this.zoneId = zoneId;
         }
     }
 }

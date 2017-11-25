@@ -1,4 +1,4 @@
-package com.applovin.mediation;
+package AdMob.Android;
 
 import android.app.Activity;
 import android.content.Context;

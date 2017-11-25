@@ -18,6 +18,8 @@
 #define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
+@interface ALAdMobAdView : ALAdView @end
+
 /**
  * The receiver object of the ALAdView's and ALAdService's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
@@ -94,9 +96,9 @@ static NSObject *ALGlobalAdViewAdsLock;
             // If this is a default Zone, create the incentivized ad normally
             if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
             {
-                self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
-                                                         size: appLovinAdSize
-                                                          sdk: [ALSdk shared]];
+                self.adView = [[ALAdMobAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
+                                                              size: appLovinAdSize
+                                                               sdk: [ALSdk shared]];
             }
             // Otherwise, use the Zones API
             else
@@ -107,21 +109,30 @@ static NSObject *ALGlobalAdViewAdsLock;
             ALGlobalAdViews[self.zoneIdentifier] = self.adView;
         }
         
+        
         AppLovinAdMobBannerDelegate *delegate = [[AppLovinAdMobBannerDelegate alloc] initWithCustomEvent: self];
         self.adView.adDisplayDelegate = delegate;
         
-        // If this is a default Zone, create the incentivized ad normally
-        if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
+        // Already have a preloaded ad
+        if ( [[self class] hasEnqueuedAdForZoneIdentifier: self.zoneIdentifier] )
         {
-            [[ALSdk shared].adService loadNextAd: appLovinAdSize andNotify: self];
+            [self.delegate customEventBanner: self didReceiveAd: self.adView];
         }
-        // Otherwise, use the Zones API
         else
         {
-            // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-            [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
-                                           withObject: self.zoneIdentifier
-                                           withObject: self];
+            // If this is a default Zone, create the incentivized ad normally
+            if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
+            {
+                [[ALSdk shared].adService loadNextAd: appLovinAdSize andNotify: self];
+            }
+            // Otherwise, use the Zones API
+            else
+            {
+                // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+                [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
+                                               withObject: self.zoneIdentifier
+                                               withObject: self];
+            }
         }
     }
     else
@@ -197,6 +208,14 @@ static NSObject *ALGlobalAdViewAdsLock;
 
 #pragma mark - Utility Methods
 
++ (BOOL)hasEnqueuedAdForZoneIdentifier:(NSString *)zoneIdentifier
+{
+    @synchronized ( ALGlobalAdViewAdsLock )
+    {
+        return ALGlobalAdViewAds[zoneIdentifier].count > 0;
+    }
+}
+
 + (alnullable ALAd *)dequeueAdForZoneIdentifier:(NSString *)zoneIdentifier
 {
     @synchronized ( ALGlobalAdViewAdsLock )
@@ -235,7 +254,7 @@ static NSObject *ALGlobalAdViewAdsLock;
 - (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
 {
     // Prematurely create instance of ALAdView to store initialized one in later
-    ALAdView *adView = [ALAdView alloc];
+    ALAdView *adView = [ALAdMobAdView alloc];
     
     // We must use NSInvocation over performSelector: for initializers
     NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
@@ -374,14 +393,16 @@ static NSObject *ALGlobalAdViewAdsLock;
 
 @end
 
+@implementation ALAdMobAdView @end
+
 /**
  * This category provides a way to have an `ALAdView` to dynamically render an enqueued ad WHEN needed.
  */
-@interface ALAdView (AdMob)
+@interface ALAdMobAdView (AdMob)
 @property (nonatomic, copy, readonly) NSString *zoneIdentifier;
 @end
 
-@implementation ALAdView (AdMob)
+@implementation ALAdMobAdView (AdMob)
 @dynamic zoneIdentifier;
 
 - (void)didMoveToWindow
