@@ -18,19 +18,16 @@
 #define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
-@interface ALAdMobAdView : ALAdView @end
-
 /**
- * The receiver object of the ALAdView's and ALAdService's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
+ * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
-@interface AppLovinAdMobBannerDelegate : NSObject<ALAdDisplayDelegate>
+@interface AppLovinAdMobBannerDelegate : NSObject<ALAdLoadDelegate, ALAdDisplayDelegate>
 @property (nonatomic, weak) AppLovinCustomEventBanner *parentCustomEvent;
 - (instancetype)initWithCustomEvent:(AppLovinCustomEventBanner *)parentCustomEvent;
 @end
 
-@interface AppLovinCustomEventBanner()<ALAdLoadDelegate>
+@interface AppLovinCustomEventBanner()
 @property (nonatomic, strong) ALAdView *adView;
-@property (nonatomic,   copy) NSString *zoneIdentifier; // The zone identifier this instance of the custom event is loading for
 @end
 
 @implementation AppLovinCustomEventBanner
@@ -42,25 +39,14 @@ static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediati
 static const CGFloat kALBannerHeightOffsetTolerance = 10.0f;
 static const CGFloat kALBannerStandardHeight = 50.0f;
 
-// A dictionary of Zone -> AdView to be shared by instances of the custom event to prevent redundant recreation of our `ALAdView`s.
+// A dictionary of Zone -> AdView to be shared by instances of the custom event.
 static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
-
-// A dictionary of Zone -> Queue of `ALAd`s to be shared by instances of the custom event.
-// This prevents skipping of ads as this adapter will be re-created and preloaded
-// on every ad load regardless if ad was actually displayed or not.
-static NSMutableDictionary<NSString *, NSMutableArray<ALAd *> *> *ALGlobalAdViewAds;
-static NSObject *ALGlobalAdViewAdsLock;
-
-#pragma mark - Class Initialization
 
 + (void)initialize
 {
     [super initialize];
     
     ALGlobalAdViews = [NSMutableDictionary dictionary];
-    
-    ALGlobalAdViewAds = [NSMutableDictionary dictionary];
-    ALGlobalAdViewAdsLock = [[NSObject alloc] init];
 }
 
 #pragma mark - GADCustomEventBanner Protocol
@@ -78,62 +64,43 @@ static NSObject *ALGlobalAdViewAdsLock;
         CGSize size = CGSizeFromGADAdSize(adSize);
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
+        NSString *zoneIdentifier;
         if ( HAS_ZONES_SUPPORT && request.additionalParameters[@"zone_id"] )
         {
-            self.zoneIdentifier = request.additionalParameters[@"zone_id"];
+            zoneIdentifier = request.additionalParameters[@"zone_id"];
         }
         else
         {
-            self.zoneIdentifier = DEFAULT_ZONE;
+            zoneIdentifier = DEFAULT_ZONE;
         }
         
         
-        self.adView = ALGlobalAdViews[self.zoneIdentifier];
+        self.adView = ALGlobalAdViews[zoneIdentifier];
         
         // Check if we already have an ALAdView for the given zone
         if ( !self.adView )
         {
             // If this is a default Zone, create the incentivized ad normally
-            if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
+            if ( [DEFAULT_ZONE isEqualToString: zoneIdentifier] )
             {
-                self.adView = [[ALAdMobAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
-                                                              size: appLovinAdSize
-                                                               sdk: [ALSdk shared]];
+                self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
+                                                         size: appLovinAdSize
+                                                          sdk: [ALSdk shared]];
             }
             // Otherwise, use the Zones API
             else
             {
-                self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: self.zoneIdentifier];
+                self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: zoneIdentifier];
             }
             
-            ALGlobalAdViews[self.zoneIdentifier] = self.adView;
+            ALGlobalAdViews[zoneIdentifier] = self.adView;
         }
-        
         
         AppLovinAdMobBannerDelegate *delegate = [[AppLovinAdMobBannerDelegate alloc] initWithCustomEvent: self];
+        self.adView.adLoadDelegate = delegate;
         self.adView.adDisplayDelegate = delegate;
         
-        // Already have a preloaded ad
-        if ( [[self class] hasEnqueuedAdForZoneIdentifier: self.zoneIdentifier] )
-        {
-            [self.delegate customEventBanner: self didReceiveAd: self.adView];
-        }
-        else
-        {
-            // If this is a default Zone, create the incentivized ad normally
-            if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
-            {
-                [[ALSdk shared].adService loadNextAd: appLovinAdSize andNotify: self];
-            }
-            // Otherwise, use the Zones API
-            else
-            {
-                // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-                [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
-                                               withObject: self.zoneIdentifier
-                                               withObject: self];
-            }
-        }
+        [self.adView loadNextAd];
     }
     else
     {
@@ -146,107 +113,7 @@ static NSObject *ALGlobalAdViewAdsLock;
     }
 }
 
-
-#pragma mark - AppLovin Ad Load Delegate
-
-- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
-{
-    [self log: @"Banner did load ad: %@", ad.adIdNumber];
-    
-    if ( !self.adView.window )
-    {
-        [AppLovinCustomEventBanner enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
-    }
-    else
-    {
-        // Check if we have enqueued ad already
-        ALAd *enqueuedAd = [AppLovinCustomEventBanner dequeueAdForZoneIdentifier: self.zoneIdentifier];
-        if ( enqueuedAd )
-        {
-            [self.adView render: enqueuedAd];
-            [AppLovinCustomEventBanner enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
-        }
-        // No enqueued ad, render newly loaded ad
-        else
-        {
-            [self.adView render: ad];
-        }
-    }
-    
-    [self.delegate customEventBanner: self didReceiveAd: self.adView];
-}
-
-- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
-{
-    [self log: @"Banner failed to load with error: %d", code];
-    
-    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
-                                         code: [self toAdMobErrorCode: code]
-                                     userInfo: nil];
-    
-    // If CURRENT ad request was a no fill, check against enqueued ads
-    if ( code == kALErrorCodeNoFill )
-    {
-        ALAd *preloadedAd = [AppLovinCustomEventBanner dequeueAdForZoneIdentifier: self.zoneIdentifier];
-        
-        // There is an enqueued ad, use that
-        if ( preloadedAd )
-        {
-            [self log: @"Using enqueued ad instead..."];
-            [self adService: adService didLoadAd: preloadedAd];
-        }
-        else
-        {
-            [self.delegate customEventBanner: self didFailAd: error];
-        }
-    }
-    else
-    {
-        [self.delegate customEventBanner: self didFailAd: error];
-    }
-}
-
 #pragma mark - Utility Methods
-
-+ (BOOL)hasEnqueuedAdForZoneIdentifier:(NSString *)zoneIdentifier
-{
-    @synchronized ( ALGlobalAdViewAdsLock )
-    {
-        return ALGlobalAdViewAds[zoneIdentifier].count > 0;
-    }
-}
-
-+ (alnullable ALAd *)dequeueAdForZoneIdentifier:(NSString *)zoneIdentifier
-{
-    @synchronized ( ALGlobalAdViewAdsLock )
-    {
-        ALAd *preloadedAd;
-        
-        NSMutableArray<ALAd *> *preloadedAds = ALGlobalAdViewAds[zoneIdentifier];
-        if ( preloadedAds.count > 0 )
-        {
-            preloadedAd = preloadedAds[0];
-            [preloadedAds removeObjectAtIndex: 0];
-        }
-        
-        return preloadedAd;
-    }
-}
-
-+ (void)enqueueAd:(ALAd *)ad forZoneIdentifier:(NSString *)zoneIdentifier
-{
-    @synchronized ( ALGlobalAdViewAdsLock )
-    {
-        NSMutableArray<ALAd *> *preloadedAds = ALGlobalAdViewAds[zoneIdentifier];
-        if ( !preloadedAds )
-        {
-            preloadedAds = [NSMutableArray array];
-            ALGlobalAdViewAds[zoneIdentifier] = preloadedAds;
-        }
-        
-        [preloadedAds addObject: ad];
-    }
-}
 
 /**
  * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
@@ -254,7 +121,7 @@ static NSObject *ALGlobalAdViewAdsLock;
 - (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
 {
     // Prematurely create instance of ALAdView to store initialized one in later
-    ALAdView *adView = [ALAdMobAdView alloc];
+    ALAdView *adView = [ALAdView alloc];
     
     // We must use NSInvocation over performSelector: for initializers
     NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
@@ -371,6 +238,26 @@ static NSObject *ALGlobalAdViewAdsLock;
     return self;
 }
 
+#pragma mark - AppLovin Ad Load Delegate
+
+- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
+{
+    [self.parentCustomEvent log: @"Banner did load ad: %@", ad.adIdNumber];
+    [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didReceiveAd: self.parentCustomEvent.adView];
+}
+
+- (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
+{
+    [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
+    
+    NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
+                                         code: [self.parentCustomEvent toAdMobErrorCode: code]
+                                     userInfo: nil];
+    [self.parentCustomEvent.delegate customEventBanner: self.parentCustomEvent didFailAd: error];
+    
+    // TODO: Add support for backfilling on regular ad request if invalid zone entered
+}
+
 #pragma mark - Ad Display Delegate
 
 - (void)ad:(ALAd *)ad wasDisplayedIn:(UIView *)view
@@ -389,41 +276,6 @@ static NSObject *ALGlobalAdViewAdsLock;
     
     [self.parentCustomEvent.delegate customEventBannerWasClicked: self.parentCustomEvent];
     [self.parentCustomEvent.delegate customEventBannerWillLeaveApplication: self.parentCustomEvent];
-}
-
-@end
-
-@implementation ALAdMobAdView @end
-
-/**
- * This category provides a way to have an `ALAdView` to dynamically render an enqueued ad WHEN needed.
- */
-@interface ALAdMobAdView (AdMob)
-@property (nonatomic, copy, readonly) NSString *zoneIdentifier;
-@end
-
-@implementation ALAdMobAdView (AdMob)
-@dynamic zoneIdentifier;
-
-- (void)didMoveToWindow
-{
-    [super didMoveToWindow];
-    
-    if ( self.window )
-    {
-        NSString *zoneIdentifier = ( HAS_ZONES_SUPPORT && self.zoneIdentifier ) ? self.zoneIdentifier : DEFAULT_ZONE;
-        
-        ALAd *preloadedAd = [AppLovinCustomEventBanner dequeueAdForZoneIdentifier: zoneIdentifier];
-        if ( preloadedAd )
-        {
-            [self render: preloadedAd];
-        }
-        // Something is wrong... no preloaded ad provided... manually load an ad if none provided
-        else
-        {
-            [self loadNextAd];
-        }
-    }
 }
 
 @end
