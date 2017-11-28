@@ -2,7 +2,6 @@ package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinAdView;
@@ -82,7 +81,7 @@ public class AppLovinCustomEventBanner
                 {
                     log( ERROR, "Failed to load banner ad with code: " + errorCode );
                     customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
-                    
+
                     // TODO: Add support for backfilling on regular ad request if invalid zone entered
                 }
             } );
@@ -191,7 +190,7 @@ public class AppLovinCustomEventBanner
 
             // Zones support is available on AppLovin SDK 7.5.0 and higher
             final Constructor<?> constructor;
-            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && !TextUtils.isEmpty( serverExtras.get( "zone_id" ) ) )
+            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
             {
                 // Dynamically create an instance of AppLovinAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
                 constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, String.class, contextClass );
