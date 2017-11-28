@@ -159,22 +159,22 @@ public class AppLovinCustomEventNative
             parentView.findViewById( R.id.ID_OF_SUBVIEW ).setOnClickListener( onClickListener );
             */
 
-            // As of AppLovin SDK >= 7.1.0, impression tracking convenience methods have been added to AppLovinNativeAd
-//            parentNativeAd.trackImpression( new AppLovinPostbackListener()
-//            {
-//                @Override
-//                public void onPostbackSuccess(String url)
-//                {
-//                    log( DEBUG, "Native ad impression successfully executed." );
-//                    notifyAdImpressed();
-//                }
-//
-//                @Override
-//                public void onPostbackFailure(String url, int errorCode)
-//                {
-//                    log( ERROR, "Native ad impression failed to execute." );
-//                }
-//            } );
+            // As of AppLovin SDK >=7.1 .0, impression tracking convenience methods have been added to AppLovinNativeAd
+            parentNativeAd.trackImpression( new AppLovinPostbackListener()
+            {
+                @Override
+                public void onPostbackSuccess(String url)
+                {
+                    log( DEBUG, "Native ad impression successfully executed." );
+                    notifyAdImpressed();
+                }
+
+                @Override
+                public void onPostbackFailure(String url, int errorCode)
+                {
+                    log( ERROR, "Native ad impression failed to execute." );
+                }
+            } );
         }
 
         @Override
