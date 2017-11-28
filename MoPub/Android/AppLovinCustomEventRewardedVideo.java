@@ -1,4 +1,4 @@
-package MoPub.Android;
+package YOUR_PACKAGE_NAMEv;
 
 import android.app.Activity;
 import android.support.annotation.NonNull;

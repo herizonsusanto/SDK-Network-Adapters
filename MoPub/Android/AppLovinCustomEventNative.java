@@ -1,4 +1,4 @@
-package MoPub.Android;
+package YOUR_PACKAGE_NAME;
 
 import android.content.Context;
 import android.os.Handler;
