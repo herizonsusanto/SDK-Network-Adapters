@@ -94,13 +94,12 @@ public class AppLovinCustomEventBanner
                 zoneId = DEFAULT_ZONE;
             }
 
-            zoneId = "zone_Id";
-
             adView = createAdView( zoneId, appLovinAdSize, context, customEventBannerListener );
 
             // Already have a preloaded ad
             if ( hasEnqueuedAd( zoneId ) )
             {
+                log( DEBUG, "Found enqueued ad while requesting for banner. Using that..." );
                 customEventBannerListener.onAdLoaded( adView );
             }
             else
@@ -108,6 +107,7 @@ public class AppLovinCustomEventBanner
                 // If this is a default Zone, load the ad normally
                 if ( DEFAULT_ZONE.equals( zoneId ) )
                 {
+                    log( DEBUG, "Loading next ad for default zone" );
                     AppLovinSdk.getInstance( context ).getAdService().loadNextAd( appLovinAdSize, this );
                 }
                 // Otherwise, use the Zones API
@@ -116,6 +116,7 @@ public class AppLovinCustomEventBanner
                     // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
                     try
                     {
+                        log( DEBUG, "Loading next ad for custom zone: " + zoneId );
                         final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
                         method.invoke( sdk.getAdService(), zoneId, this );
                     }
@@ -140,12 +141,14 @@ public class AppLovinCustomEventBanner
     @Override
     public void onPause()
     {
+        log( DEBUG, "onPause() called" );
         if ( adView != null ) adView.pause();
     }
 
     @Override
     public void onResume()
     {
+        log( DEBUG, "onResume() called" );
         if ( adView != null ) adView.resume();
     }
 
@@ -236,6 +239,8 @@ public class AppLovinCustomEventBanner
                 preloadedAd = preloadedAds.poll();
             }
 
+            log( DEBUG, "Dequeued ad: " + preloadedAd + " for zone: " + zoneId );
+
             return preloadedAd;
         }
     }
@@ -252,6 +257,8 @@ public class AppLovinCustomEventBanner
             }
 
             preloadedAds.offer( ad );
+
+            log( DEBUG, "Enqueued ad: " + ad + " for zone: " + zoneId + ". Size: " + preloadedAds.size() );
         }
     }
 
@@ -398,11 +405,6 @@ public class AppLovinCustomEventBanner
             super.onAttachedToWindow();
 
             log( DEBUG, "AppLovinAdView attached to window" );
-
-            // Create and attach listener when needed, to prevent accidental callback firing
-            //            final AppLovinAdMobBannerListener listener = new AppLovinAdMobBannerListener();
-            //            setAdDisplayListener( listener );
-            //            setAdClickListener( listener );
 
             final AppLovinAd preloadedAd = dequeueAd( zoneId );
             if ( preloadedAd != null )
