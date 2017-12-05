@@ -71,8 +71,6 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         zoneIdentifier = DEFAULT_ZONE;
     }
     
-    zoneIdentifier = DEFAULT_ZONE;
-    
     // Check if incentivized ad for zone already exists
     if ( ALGlobalIncentivizedInterstitialAds[zoneIdentifier] )
     {
