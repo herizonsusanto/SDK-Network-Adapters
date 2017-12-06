@@ -36,7 +36,7 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 5/29/17.
  */
 
-public class ApplovinAdapter
+public class ApplovinAdapterasdf
         implements MediationRewardedVideoAdAdapter, OnContextChangedListener,
         AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
