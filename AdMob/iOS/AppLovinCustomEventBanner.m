@@ -18,6 +18,9 @@
 #define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
+#define IS_IPHONE ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+#define IS_IPAD ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
@@ -137,7 +140,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(GADAdSize)size
 {
-    if ( GADAdSizeEqualToSize(kGADAdSizeBanner, size ) || GADAdSizeEqualToSize(kGADAdSizeLargeBanner, size ) )
+    if ( GADAdSizeEqualToSize(kGADAdSizeBanner, size) || GADAdSizeEqualToSize(kGADAdSizeLargeBanner, size) || (IS_IPHONE && GADAdSizeEqualToSize(kGADAdSizeSmartBannerPortrait, size)) )
     {
         return [ALAdSize sizeBanner];
     }
@@ -145,7 +148,8 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     {
         return [ALAdSize sizeMRec];
     }
-    else if ( GADAdSizeEqualToSize(kGADAdSizeLeaderboard, size) )
+    else if ( GADAdSizeEqualToSize(kGADAdSizeLeaderboard, size) ||
+             (IS_IPAD && (GADAdSizeEqualToSize(kGADAdSizeSmartBannerPortrait, size) || GADAdSizeEqualToSize(kGADAdSizeSmartBannerLandscape, size))) )
     {
         return [ALAdSize sizeLeader];
     }
