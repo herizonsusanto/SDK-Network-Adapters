@@ -96,7 +96,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     {
         [self log: @"Failed to create an AppLovin banner with invalid size"];
         
-        NSString *failureReason = [NSString stringWithFormat: @"Adaptor requested to display a banner with invalid size: %@.", NSStringFromCGSize(size)];
+        NSString *failureReason = [NSString stringWithFormat: @"Adapter requested to display a banner with invalid size: %@.", NSStringFromCGSize(size)];
         NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
                                          userInfo: @{NSLocalizedFailureReasonErrorKey : failureReason}];
