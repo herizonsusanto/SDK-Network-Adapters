@@ -12,4 +12,4 @@ For Banners integration, add the java file AppLovinCustomEventBanner.java into y
 
 
 --------------------
-Note: For Unity-Android integration, you can use the applovin-admob-adapters.jar file from the Unity folder instead of using the open source adapters. 
+Note: For Unity-Android integration, you can use the applovin-admob-adaptors.jar file from the Unity folder instead of using the open source adapters. 
