@@ -56,7 +56,7 @@ public class AppLovinCustomEventNative
         this.nativeListener = customEventNativeListener;
 
         final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-        sdk.setPluginVersion( "MoPub-2.0.1" );
+        sdk.setPluginVersion( "MoPub-2.1.0" );
         sdk.getNativeAdService().loadNativeAds( 1, this );
     }
 

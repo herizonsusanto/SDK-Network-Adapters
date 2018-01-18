@@ -61,7 +61,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
     if ( adSize )
     {
-        [[ALSdk shared] setPluginVersion: @"MoPub-2.0.1"];
+        [[ALSdk shared] setPluginVersion: @"MoPub-2.1.0"];
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier = info[@"zone_id"];
