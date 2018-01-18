@@ -140,7 +140,9 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(GADAdSize)size
 {
-    if ( GADAdSizeEqualToSize(kGADAdSizeBanner, size) || GADAdSizeEqualToSize(kGADAdSizeLargeBanner, size) || (IS_IPHONE && GADAdSizeEqualToSize(kGADAdSizeSmartBannerPortrait, size)) )
+    if ( GADAdSizeEqualToSize(kGADAdSizeBanner, size) ||
+        GADAdSizeEqualToSize(kGADAdSizeLargeBanner, size) ||
+        (IS_IPHONE && GADAdSizeEqualToSize(kGADAdSizeSmartBannerPortrait, size)) ) // Smart iPhone portrait banners 50px tall
     {
         return [ALAdSize sizeBanner];
     }
@@ -148,8 +150,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     {
         return [ALAdSize sizeMRec];
     }
-    else if ( GADAdSizeEqualToSize(kGADAdSizeLeaderboard, size) ||
-             (IS_IPAD && (GADAdSizeEqualToSize(kGADAdSizeSmartBannerPortrait, size) || GADAdSizeEqualToSize(kGADAdSizeSmartBannerLandscape, size))) )
+    else if ( GADAdSizeEqualToSize(kGADAdSizeLeaderboard, size) || (IS_IPAD && GADAdSizeEqualToSize(kGADAdSizeSmartBannerPortrait, size)) ) // Smart iPad portrait "banners" 90px tall
     {
         return [ALAdSize sizeLeader];
     }
