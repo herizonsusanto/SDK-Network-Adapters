@@ -17,6 +17,10 @@
     #import "ALAdView.h"
 #endif
 
+// Convenience macro for checking if AppLovin SDK has support for zones
+#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define EMPTY_ZONE @""
+
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
  */
@@ -34,6 +38,19 @@
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
+static const CGFloat kALBannerHeightOffsetTolerance = 10.0f;
+static const CGFloat kALBannerStandardHeight = 50.0f;
+
+// A dictionary of Zone -> AdView to be shared by instances of the custom event.
+static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
+
++ (void)initialize
+{
+    [super initialize];
+
+    ALGlobalAdViews = [NSMutableDictionary dictionary];
+}
+
 #pragma mark - MPBannerCustomEvent Overridden Methods
 
 - (void)requestAdWithSize:(CGSize)size customEventInfo:(NSDictionary *)info
@@ -46,7 +63,28 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     {
         [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
         
-        self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height) size: adSize sdk: [ALSdk shared]];
+        // Zones support is available on AppLovin SDK 4.5.0 and higher
+        NSString *zoneIdentifier = info[@"zone_id"];
+        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        {
+            self.adView = ALGlobalAdViews[zoneIdentifier];
+            if ( !self.adView )
+            {
+                self.adView = [self adViewWithAdSize: adSize zoneIdentifier: zoneIdentifier];
+                ALGlobalAdViews[zoneIdentifier] = self.adView;
+            }
+        }
+        else
+        {
+            self.adView = ALGlobalAdViews[EMPTY_ZONE];
+            if ( !self.adView )
+            {
+                self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
+                                                         size: adSize
+                                                          sdk: [ALSdk shared]];
+                ALGlobalAdViews[EMPTY_ZONE] = self.adView;
+            }
+        }
         
         AppLovinMoPubBannerDelegate *delegate = [[AppLovinMoPubBannerDelegate alloc] initWithCustomEvent: self];
         self.adView.adLoadDelegate = delegate;
@@ -80,6 +118,26 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 #pragma mark - Utility Methods
 
+/**
+ * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
+ */
+- (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
+{
+    // Prematurely create instance of ALAdView to store initialized one in later
+    ALAdView *adView = [ALAdView alloc];
+    
+    // We must use NSInvocation over performSelector: for initializers
+    NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
+    [inv setSelector: @selector(initWithSize:zoneIdentifier:)];
+    [inv setArgument: &adSize atIndex: 2];
+    [inv setArgument: &zoneIdentifier atIndex: 3];
+    [inv setReturnValue: &adView];
+    [inv invokeWithTarget: adView];
+    
+    return adView;
+}
+
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(CGSize)size
 {
     if ( CGSizeEqualToSize(size, MOPUB_BANNER_SIZE) )
@@ -93,6 +151,16 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     else if ( CGSizeEqualToSize(size, MOPUB_LEADERBOARD_SIZE) )
     {
         return [ALAdSize sizeLeader];
+    }
+    // This is not a one of MoPub's predefined size
+    else
+    {
+        // Assume fluid width, and check for height with offset tolerance
+        CGFloat offset = ABS(kALBannerStandardHeight - size.height);
+        if ( offset <= kALBannerHeightOffsetTolerance )
+        {
+            return [ALAdSize sizeBanner];
+        }
     }
     
     return nil;
@@ -163,6 +231,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
                                          code: [self.parentCustomEvent toMoPubErrorCode: code]
                                      userInfo: nil];
     [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didFailToLoadAdWithError: error];
+    
+    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate

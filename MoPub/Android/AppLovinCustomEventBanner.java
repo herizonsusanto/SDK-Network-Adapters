@@ -39,6 +39,9 @@ public class AppLovinCustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
 
+    private static final int BANNER_STANDARD_HEIGHT         = 50;
+    private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
+
     private static final String AD_WIDTH_KEY  = "com_mopub_ad_width";
     private static final String AD_HEIGHT_KEY = "com_mopub_ad_height";
 
@@ -60,13 +63,14 @@ public class AppLovinCustomEventBanner
 
         log( DEBUG, "Requesting AppLovin banner with localExtras: " + localExtras );
 
-        final AppLovinAdSize adSize = appLovinAdSizeFromServerExtras( localExtras );
+        final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )
         {
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
             sdk.setPluginVersion( "MoPub-2.0" );
 
-            final AppLovinAdView adView = createAdView( adSize, context, customEventBannerListener );
+            final AppLovinAdView adView = createAdView( adSize, serverExtras, context, customEventBannerListener );
+
             adView.setAdLoadListener( new AppLovinAdLoadListener()
             {
                 @Override
@@ -81,6 +85,8 @@ public class AppLovinCustomEventBanner
                 {
                     log( ERROR, "Failed to load banner ad with code: " + errorCode );
                     customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+
+                    // TODO: Add support for backfilling on regular ad request if invalid zone entered
                 }
             } );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
@@ -132,10 +138,10 @@ public class AppLovinCustomEventBanner
     // Utility Methods
     //
 
-    private AppLovinAdSize appLovinAdSizeFromServerExtras(final Map<String, Object> serverExtras)
+    private AppLovinAdSize appLovinAdSizeFromLocalExtras(final Map<String, Object> localExtras)
     {
         // Handle trivial case
-        if ( serverExtras == null || serverExtras.isEmpty() )
+        if ( localExtras == null || localExtras.isEmpty() )
         {
             log( ERROR, "No serverExtras provided" );
             return null;
@@ -143,17 +149,18 @@ public class AppLovinCustomEventBanner
 
         try
         {
-            final int width = (Integer) serverExtras.get( AD_WIDTH_KEY );
-            final int height = (Integer) serverExtras.get( AD_HEIGHT_KEY );
+            final int width = (Integer) localExtras.get( AD_WIDTH_KEY );
+            final int height = (Integer) localExtras.get( AD_HEIGHT_KEY );
 
             // We have valid dimensions
             if ( width > 0 && height > 0 )
             {
                 log( DEBUG, "Valid width (" + width + ") and height (" + height + ") provided" );
 
-                // Use the smallest AppLovinAdSize that will properly contain the adView
+                // Assume fluid width, and check for height with offset tolerance
+                final int offset = Math.abs( BANNER_STANDARD_HEIGHT - height );
 
-                if ( height <= AppLovinAdSize.BANNER.getHeight() )
+                if ( offset <= BANNER_HEIGHT_OFFSET_TOLERANCE )
                 {
                     return AppLovinAdSize.BANNER;
                 }
@@ -183,7 +190,7 @@ public class AppLovinCustomEventBanner
     // Utility Methods
     //
 
-    private AppLovinAdView createAdView(final AppLovinAdSize size, final Context parentContext, final CustomEventBannerListener customEventBannerListener)
+    private AppLovinAdView createAdView(final AppLovinAdSize size, final Map<String, String> serverExtras, final Context parentContext, final CustomEventBannerListener customEventBannerListener)
     {
         AppLovinAdView adView = null;
 
@@ -191,9 +198,20 @@ public class AppLovinCustomEventBanner
         {
             // AppLovin SDK < 7.1.0 uses an Activity, as opposed to Context in >= 7.1.0
             final Class<?> contextClass = ( AppLovinSdk.VERSION_CODE < 710 ) ? Activity.class : Context.class;
-            final Constructor<?> constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, contextClass );
 
-            adView = (AppLovinAdView) constructor.newInstance( size, parentContext );
+            // Zones support is available on AppLovin SDK 7.5.0 and higher
+            final Constructor<?> constructor;
+            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
+            {
+                // Dynamically create an instance of AppLovinAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
+                constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, String.class, contextClass );
+                adView = (AppLovinAdView) constructor.newInstance( size, serverExtras.get( "zone_id" ), parentContext );
+            }
+            else
+            {
+                constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, contextClass );
+                adView = (AppLovinAdView) constructor.newInstance( size, parentContext );
+            }
         }
         catch ( Throwable th )
         {
