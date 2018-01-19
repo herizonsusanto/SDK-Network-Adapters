@@ -20,10 +20,6 @@
 #define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
-// This class implementation with the old classname is left here for backwards compatibility purposes.
-@implementation AppLovinRewardedCustomEvent
-@end
-
 @interface AppLovinRewardedVideoCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;

@@ -33,9 +33,6 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 5/27/17.
  */
 
-//
-// PLEASE NOTE: We have renamed this class from "YOUR_PACKAGE_NAME.AppLovinInterstitialAdapter" to "YOUR_PACKAGE_NAME.AppLovinCustomEventInterstitial", you can use either classname in your MoPub account.
-//
 public class AppLovinCustomEventInterstitial
         extends CustomEventInterstitial
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
