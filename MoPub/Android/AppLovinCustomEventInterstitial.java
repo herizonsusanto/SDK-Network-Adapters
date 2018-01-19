@@ -1,4 +1,4 @@
-package YOUR_PACKAGE_NAME;
+package com.mopub.mobileads;
 
 import android.app.Activity;
 import android.content.Context;
