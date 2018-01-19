@@ -16,9 +16,6 @@ import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
 import com.mopub.common.LifecycleListener;
 import com.mopub.common.MoPubReward;
-import com.mopub.mobileads.CustomEventRewardedVideo;
-import com.mopub.mobileads.MoPubErrorCode;
-import com.mopub.mobileads.MoPubRewardedVideoManager;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -33,7 +30,7 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 5/27/17.
  */
 
-public class AppLovinCustomEventRewardedVideo
+public class AppLovinRewardedVideo
         extends CustomEventRewardedVideo
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {

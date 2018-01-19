@@ -15,8 +15,6 @@ import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinAdVideoPlaybackListener;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
-import com.mopub.mobileads.CustomEventInterstitial;
-import com.mopub.mobileads.MoPubErrorCode;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -33,7 +31,7 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 5/27/17.
  */
 
-public class AppLovinCustomEventInterstitial
+public class AppLovinInterstitial
         extends CustomEventInterstitial
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
 {

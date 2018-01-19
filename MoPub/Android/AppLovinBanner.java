@@ -13,8 +13,6 @@ import com.applovin.sdk.AppLovinAdLoadListener;
 import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
-import com.mopub.mobileads.CustomEventBanner;
-import com.mopub.mobileads.MoPubErrorCode;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -31,7 +29,7 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 3/6/17.
  */
 
-public class AppLovinCustomEventBanner
+public class AppLovinBanner
         extends CustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;

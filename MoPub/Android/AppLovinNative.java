@@ -30,7 +30,7 @@ import static android.util.Log.ERROR;
  * Created by Thomas So on 5/27/17.
  */
 
-public class AppLovinCustomEventNative
+public class AppLovinNative
         extends CustomEventNative
         implements AppLovinNativeAdLoadListener
 {
@@ -183,7 +183,7 @@ public class AppLovinCustomEventNative
         @Override
         public void destroy()
         {
-            AppLovinCustomEventNative.this.nativeListener = null;
+            AppLovinNative.this.nativeListener = null;
         }
     }
 
