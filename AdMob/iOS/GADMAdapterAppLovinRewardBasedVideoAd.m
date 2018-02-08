@@ -134,7 +134,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         
         NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
-                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
+                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"adapter requested to display a rewarded video before one was loaded"}];
         
         [self.connector adapter: self didFailToSetUpRewardBasedVideoAdWithError: error];
     }
@@ -159,7 +159,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
                                          code: [self toAdMobErrorCode: code]
-                                     userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
+                                     userInfo: @{NSLocalizedFailureReasonErrorKey : @"adapter requested to display a rewarded video before one was loaded"}];
     [self.connector adapter: self didFailToLoadRewardBasedVideoAdwithError: error];
     
     // TODO: Add support for backfilling on regular ad request if invalid zone entered

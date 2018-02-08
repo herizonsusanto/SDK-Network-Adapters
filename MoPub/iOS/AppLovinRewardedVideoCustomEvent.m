@@ -118,7 +118,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         
         NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
-                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
+                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"adapter requested to display a rewarded video before one was loaded"}];
         
         [self.delegate rewardedVideoDidFailToPlayForCustomEvent: self error: error];
     }
