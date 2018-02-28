@@ -15,6 +15,7 @@ import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinAdVideoPlaybackListener;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
+import com.applovin.sdk.AppLovinSdkSettings;
 import com.mopub.mobileads.CustomEventInterstitial;
 import com.mopub.mobileads.MoPubErrorCode;
 
@@ -43,9 +44,9 @@ public class AppLovinCustomEventInterstitial
     private static final boolean LOGGING_ENABLED = true;
     private static final String  DEFAULT_ZONE    = "";
 
+    private AppLovinSdk                     sdk;
     private CustomEventInterstitialListener listener;
     private Context                         context;
-
 
     // A map of Zone -> Queue of `AppLovinAd`s to be shared by instances of the custom event.
     // This prevents skipping of ads as this adapter will be re-created and preloaded
@@ -62,7 +63,7 @@ public class AppLovinCustomEventInterstitial
     @Override
     public void loadInterstitial(final Context context, final CustomEventInterstitialListener listener, final Map<String, Object> localExtras, final Map<String, String> serverExtras)
     {
-        log( DEBUG, "Requesting AppLovin interstitial with localExtras: " + localExtras );
+        log( DEBUG, "Requesting AppLovin interstitial with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
 
         // SDK versions BELOW 7.2.0 require a instance of an Activity to be passed in as the context
         if ( AppLovinSdk.VERSION_CODE < 720 && !( context instanceof Activity ) )
@@ -77,7 +78,7 @@ public class AppLovinCustomEventInterstitial
         this.listener = listener;
         this.context = context;
 
-        final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
+        sdk = retrieveSdk( serverExtras, context );
         sdk.setPluginVersion( "MoPub-2.1.0" );
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
@@ -122,8 +123,6 @@ public class AppLovinCustomEventInterstitial
         final AppLovinAd preloadedAd = dequeueAd( zoneId );
         if ( preloadedAd != null )
         {
-            final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-
             final AppLovinInterstitialAdDialog interstitialAd = createInterstitial( context, sdk );
             interstitialAd.setAdDisplayListener( this );
             interstitialAd.setAdClickListener( this );
@@ -294,5 +293,25 @@ public class AppLovinCustomEventInterstitial
         {
             return MoPubErrorCode.UNSPECIFIED;
         }
+    }
+
+    /**
+     * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
+     */
+    static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    {
+        final String sdkKey = serverExtras.get( "sdk_key" );
+        final AppLovinSdk sdk;
+
+        if ( !TextUtils.isEmpty( sdkKey ) )
+        {
+            sdk = AppLovinSdk.getInstance( sdkKey, new AppLovinSdkSettings(), context );
+        }
+        else
+        {
+            sdk = AppLovinSdk.getInstance( context );
+        }
+
+        return sdk;
     }
 }
