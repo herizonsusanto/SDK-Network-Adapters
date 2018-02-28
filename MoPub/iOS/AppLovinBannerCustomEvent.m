@@ -129,7 +129,10 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundeclared-selector"
-    [adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    if ( [adView respondsToSelector: @selector(setZoneIdentifier:)] )
+    {
+        [adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    }
 #pragma clang diagnostic pop
     
     return adView;

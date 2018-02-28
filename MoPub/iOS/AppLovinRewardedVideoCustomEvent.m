@@ -242,7 +242,10 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundeclared-selector"
-    [incent performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    if ( [incent respondsToSelector: @selector(setZoneIdentifier:)] )
+    {
+        [incent performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    }
 #pragma clang diagnostic pop
     
     return incent;
