@@ -1,8 +1,10 @@
 package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinIncentivizedInterstitial;
@@ -14,6 +16,7 @@ import com.applovin.sdk.AppLovinAdRewardListener;
 import com.applovin.sdk.AppLovinAdVideoPlaybackListener;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
+import com.applovin.sdk.AppLovinSdkSettings;
 import com.mopub.common.LifecycleListener;
 import com.mopub.common.MoPubReward;
 import com.mopub.mobileads.CustomEventRewardedVideo;
@@ -50,6 +53,7 @@ public class AppLovinCustomEventRewardedVideo
 
     private static boolean initialized;
 
+    private AppLovinSdk                      sdk;
     private AppLovinIncentivizedInterstitial incentivizedInterstitial;
     private Activity                         parentActivity;
 
@@ -68,8 +72,8 @@ public class AppLovinCustomEventRewardedVideo
 
         if ( !initialized )
         {
-            AppLovinSdk.initializeSdk( activity );
-            AppLovinSdk.getInstance( activity ).setPluginVersion( "MoPub-2.1.0" );
+            sdk = retrieveSdk( serverExtras, activity );
+            sdk.setPluginVersion( "MoPub-2.1.0" );
 
             initialized = true;
 
@@ -82,7 +86,7 @@ public class AppLovinCustomEventRewardedVideo
     @Override
     protected void loadWithSdkInitialized(@NonNull final Activity activity, @NonNull final Map<String, Object> localExtras, @NonNull final Map<String, String> serverExtras) throws Exception
     {
-        log( DEBUG, "Requesting AppLovin rewarded video with serverExtras: " + serverExtras );
+        log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
 
         parentActivity = activity;
 
@@ -113,7 +117,7 @@ public class AppLovinCustomEventRewardedVideo
             // Otherwise, use the Zones API
             else
             {
-                incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, AppLovinSdk.getInstance( activity ) );
+                incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, sdk );
             }
 
             GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.put( zoneId, incentivizedInterstitial );
@@ -325,5 +329,25 @@ public class AppLovinCustomEventRewardedVideo
         {
             return MoPubErrorCode.UNSPECIFIED;
         }
+    }
+
+    /**
+     * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
+     */
+    static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    {
+        final String sdkKey = serverExtras.get( "sdk_key" );
+        final AppLovinSdk sdk;
+
+        if ( !TextUtils.isEmpty( sdkKey ) )
+        {
+            sdk = AppLovinSdk.getInstance( sdkKey, new AppLovinSdkSettings(), context );
+        }
+        else
+        {
+            sdk = AppLovinSdk.getInstance( context );
+        }
+
+        return sdk;
     }
 }
