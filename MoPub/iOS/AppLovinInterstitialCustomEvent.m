@@ -21,6 +21,7 @@
 
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
+@property (nonatomic, strong) ALSdk *sdk;
 @property (nonatomic, strong) ALInterstitialAd *interstitialAd;
 @property (nonatomic,   copy) NSString *zoneIdentifier; // The zone identifier this instance of the custom event is loading for
 
@@ -53,7 +54,8 @@ static NSObject *ALGlobalInterstitialAdsLock;
 {
     [self log: @"Requesting AppLovin interstitial with info: %@", info];
     
-    [[ALSdk shared] setPluginVersion: @"MoPub-2.1.0"];
+    self.sdk = [self SDKFromCustomEventInfo: info];
+    [self.sdk setPluginVersion: @"MoPub-2.1.0"];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     if ( HAS_ZONES_SUPPORT && info[@"zone_id"] )
@@ -71,7 +73,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     if ( preloadedAd )
     {
         [self log: @"Found preloaded ad for zone: {%@}", self.zoneIdentifier];
-        [self adService: [ALSdk shared].adService didLoadAd: preloadedAd];
+        [self adService: self.sdk.adService didLoadAd: preloadedAd];
     }
     // No ad currently preloaded
     else
@@ -79,15 +81,15 @@ static NSObject *ALGlobalInterstitialAdsLock;
         // If this is a default Zone, create the incentivized ad normally
         if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
         {
-            [[ALSdk shared].adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+            [self.sdk.adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
         }
         // Otherwise, use the Zones API
         else
         {
             // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-            [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
-                                           withObject: self.zoneIdentifier
-                                           withObject: self];
+            [self.sdk.adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
+                                     withObject: self.zoneIdentifier
+                                     withObject: self];
         }
     }
 }
@@ -97,7 +99,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
     if ( preloadedAd )
     {
-        self.interstitialAd = [[ALInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+        self.interstitialAd = [[ALInterstitialAd alloc] initWithSdk: self.sdk];
         self.interstitialAd.adDisplayDelegate = self;
         self.interstitialAd.adVideoPlaybackDelegate = self;
         [self.interstitialAd showOver: rootViewController.view.window andRender: preloadedAd];
@@ -241,6 +243,19 @@ static NSObject *ALGlobalInterstitialAdsLock;
     else
     {
         return MOPUBErrorUnknown;
+    }
+}
+
+- (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
+{
+    NSString *SDKKey = info[@"sdk_key"];
+    if ( SDKKey.length > 0 )
+    {
+        return [ALSdk sharedWithKey: SDKKey];
+    }
+    else
+    {
+        return [ALSdk shared];
     }
 }
 
