@@ -17,7 +17,7 @@
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 // This class implementation with the old classname is left here for backwards compatibility purposes.
@@ -64,7 +64,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     NSString *zoneIdentifier;
-    if ( HAS_ZONES_SUPPORT && info[@"zone_id"] )
+    if ( HAS_ZONES_SUPPORT(self.sdk) && info[@"zone_id"] )
     {
         zoneIdentifier = info[@"zone_id"];
     }

@@ -16,7 +16,7 @@
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
@@ -58,7 +58,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     [self.sdk setPluginVersion: @"MoPub-2.1.0"];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    if ( HAS_ZONES_SUPPORT && info[@"zone_id"] )
+    if ( HAS_ZONES_SUPPORT(self.sdk) && info[@"zone_id"] )
     {
         self.zoneIdentifier = info[@"zone_id"];
     }
