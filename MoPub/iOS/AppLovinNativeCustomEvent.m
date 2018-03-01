@@ -47,7 +47,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [[self class] log: @"Requesting AppLovin native ad with info: %@", info];
     
-    [[ALSdk shared] setPluginVersion: @"MoPub-2.1.0"];
+    [[ALSdk shared] setPluginVersion: @"MoPub-2.1.1"];
     
     ALNativeAdService *nativeAdService = [ALSdk shared].nativeAdService;
     [nativeAdService loadNativeAdGroupOfCount: 1 andNotify: self];
