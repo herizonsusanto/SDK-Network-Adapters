@@ -134,7 +134,15 @@ public class AppLovinCustomEventBanner
             };
 
             // Zones support is available on AppLovin SDK 7.5.0 and higher
-            final String zoneId = serverExtras != null ? serverExtras.get( "zone_id" ) : null;
+            final String zoneId;
+            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
+            {
+                zoneId = serverExtras.get( "zone_id" );
+            }
+            else
+            {
+                zoneId = null;
+            }
 
             if ( !TextUtils.isEmpty( zoneId ) )
             {
