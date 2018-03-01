@@ -18,7 +18,7 @@
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define EMPTY_ZONE @""
 
 /**
@@ -30,6 +30,7 @@
 @end
 
 @interface AppLovinBannerCustomEvent()
+@property (nonatomic, strong) ALSdk *sdk;
 @property (nonatomic, strong) ALAdView *adView;
 @end
 
@@ -61,11 +62,12 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
     if ( adSize )
     {
-        [[ALSdk shared] setPluginVersion: @"MoPub-2.1.0"];
+        self.sdk = [self SDKFromCustomEventInfo: info];
+        [self.sdk setPluginVersion: @"MoPub-2.1.0"];
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier = info[@"zone_id"];
-        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        if ( HAS_ZONES_SUPPORT(self.sdk) && zoneIdentifier.length > 0 )
         {
             self.adView = ALGlobalAdViews[zoneIdentifier];
             if ( !self.adView )
@@ -81,7 +83,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
             {
                 self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
                                                          size: adSize
-                                                          sdk: [ALSdk shared]];
+                                                          sdk: self.sdk];
                 ALGlobalAdViews[EMPTY_ZONE] = self.adView;
             }
         }
@@ -123,17 +125,15 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
  */
 - (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
 {
-    // Prematurely create instance of ALAdView to store initialized one in later
-    ALAdView *adView = [ALAdView alloc];
+    ALAdView *adView = [[ALAdView alloc] initWithSdk: self.sdk size: adSize];
     
-    // We must use NSInvocation over performSelector: for initializers
-    NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
-    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
-    [inv setSelector: @selector(initWithSize:zoneIdentifier:)];
-    [inv setArgument: &adSize atIndex: 2];
-    [inv setArgument: &zoneIdentifier atIndex: 3];
-    [inv setReturnValue: &adView];
-    [inv invokeWithTarget: adView];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+    if ( [adView respondsToSelector: @selector(setZoneIdentifier:)] )
+    {
+        [adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    }
+#pragma clang diagnostic pop
     
     return adView;
 }
@@ -196,6 +196,19 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     else
     {
         return MOPUBErrorUnknown;
+    }
+}
+
+- (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
+{
+    NSString *SDKKey = info[@"sdk_key"];
+    if ( SDKKey.length > 0 )
+    {
+        return [ALSdk sharedWithKey: SDKKey];
+    }
+    else
+    {
+        return [ALSdk shared];
     }
 }
 
