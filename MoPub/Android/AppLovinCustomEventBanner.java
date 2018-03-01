@@ -64,7 +64,7 @@ public class AppLovinCustomEventBanner
             return;
         }
 
-        log( DEBUG, "Requesting AppLovin banner with localExtras: " + localExtras );
+        log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
 
         final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )
@@ -118,7 +118,7 @@ public class AppLovinCustomEventBanner
                 public void adReceived(final AppLovinAd ad)
                 {
                     adView.renderAd( ad );
-                    
+
                     log( DEBUG, "Successfully loaded banner ad" );
                     customEventBannerListener.onBannerLoaded( adView );
                 }
