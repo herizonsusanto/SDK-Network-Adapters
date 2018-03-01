@@ -145,8 +145,6 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
                                          code: [self toMoPubErrorCode: code]
                                      userInfo: nil];
     [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent: self error: error];
-    
-    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate

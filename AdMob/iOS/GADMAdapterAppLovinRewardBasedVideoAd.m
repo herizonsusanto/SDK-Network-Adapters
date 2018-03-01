@@ -161,8 +161,6 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
                                          code: [self toAdMobErrorCode: code]
                                      userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adapter requested to display a rewarded video before one was loaded"}];
     [self.connector adapter: self didFailToLoadRewardBasedVideoAdwithError: error];
-    
-    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate

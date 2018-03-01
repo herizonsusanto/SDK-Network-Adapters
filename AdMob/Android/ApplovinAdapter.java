@@ -230,8 +230,6 @@ public class ApplovinAdapter
                 listener.onAdFailedToLoad( ApplovinAdapter.this, toAdMobErrorCode( errorCode ) );
             }
         } );
-
-        // TODO: Add support for backfilling on regular ad request if invalid zone entered
     }
 
     //

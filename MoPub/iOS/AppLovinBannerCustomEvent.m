@@ -233,19 +233,25 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self.parentCustomEvent log: @"Banner did load ad: %@", ad.adIdNumber];
-    [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didLoadAd: self.parentCustomEvent.adView];
+    
+    // Ensure logic is ran on main queue
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent
+                                                 didLoadAd: self.parentCustomEvent.adView];
+    });
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
 {
-    [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
-    
-    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
-                                         code: [self.parentCustomEvent toMoPubErrorCode: code]
-                                     userInfo: nil];
-    [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didFailToLoadAdWithError: error];
-    
-    // TODO: Add support for backfilling on regular ad request if invalid zone entered
+    // Ensure logic is ran on main queue
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
+        
+        NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                             code: [self.parentCustomEvent toMoPubErrorCode: code]
+                                         userInfo: nil];
+        [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didFailToLoadAdWithError: error];
+    });
 }
 
 #pragma mark - Ad Display Delegate

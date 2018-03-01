@@ -15,6 +15,7 @@ import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
+import com.applovin.sdk.AppLovinSdkUtils;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
@@ -117,19 +118,33 @@ public class AppLovinCustomEventBanner
                 @Override
                 public void adReceived(final AppLovinAd ad)
                 {
-                    adView.renderAd( ad );
+                    // Ensure logic is ran on main queue
+                    AppLovinSdkUtils.runOnUiThread( new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            adView.renderAd( ad );
 
-                    log( DEBUG, "Successfully loaded banner ad" );
-                    customEventBannerListener.onBannerLoaded( adView );
+                            log( DEBUG, "Successfully loaded banner ad" );
+                            customEventBannerListener.onBannerLoaded( adView );
+                        }
+                    } );
                 }
 
                 @Override
                 public void failedToReceiveAd(final int errorCode)
                 {
-                    log( ERROR, "Failed to load banner ad with code: " + errorCode );
-                    customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
-
-                    // TODO: Add support for backfilling on regular ad request if invalid zone entered
+                    // Ensure logic is ran on main queue
+                    AppLovinSdkUtils.runOnUiThread( new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            log( ERROR, "Failed to load banner ad with code: " + errorCode );
+                            customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+                        }
+                    } );
                 }
             };
 
