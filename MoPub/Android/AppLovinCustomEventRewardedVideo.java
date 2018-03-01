@@ -336,7 +336,7 @@ public class AppLovinCustomEventRewardedVideo
      */
     static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
     {
-        final String sdkKey = serverExtras.get( "sdk_key" );
+        final String sdkKey = serverExtras != null ? serverExtras.get( "sdk_key" ) : null;
         final AppLovinSdk sdk;
 
         if ( !TextUtils.isEmpty( sdkKey ) )
