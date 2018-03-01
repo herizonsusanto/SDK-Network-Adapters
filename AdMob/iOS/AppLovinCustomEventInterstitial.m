@@ -110,7 +110,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
         
         NSError *error = [NSError errorWithDomain: kALAdMobMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
-                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display an interstitial before one was loaded"}];
+                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adapter requested to display an interstitial before one was loaded"}];
         
         [self.delegate customEventInterstitial: self didFailAd: error];
     }
@@ -260,3 +260,4 @@ static NSObject *ALGlobalInterstitialAdsLock;
 }
 
 @end
+
