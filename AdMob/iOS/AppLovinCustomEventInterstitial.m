@@ -146,8 +146,6 @@ static NSObject *ALGlobalInterstitialAdsLock;
                                          code: [self toAdMobErrorCode: code]
                                      userInfo: nil];
     [self.delegate customEventInterstitial: self didFailAd: error];
-    
-    // TODO: Add support for backfilling on regular ad request if invalid zone entered
 }
 
 #pragma mark - Ad Display Delegate

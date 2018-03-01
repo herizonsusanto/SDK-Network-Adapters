@@ -189,8 +189,6 @@ public class AppLovinCustomEventInterstitial
                 listener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
             }
         } );
-
-        // TODO: Add support for backfilling on regular ad request if invalid zone entered
     }
 
     //

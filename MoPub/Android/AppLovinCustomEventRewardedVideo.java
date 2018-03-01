@@ -176,8 +176,6 @@ public class AppLovinCustomEventRewardedVideo
     {
         log( DEBUG, "Rewarded video failed to load with error: " + errorCode );
         MoPubRewardedVideoManager.onRewardedVideoLoadFailure( this.getClass(), "", toMoPubErrorCode( errorCode ) );
-
-        // TODO: Add support for backfilling on regular ad request if invalid zone entered
     }
 
     //
