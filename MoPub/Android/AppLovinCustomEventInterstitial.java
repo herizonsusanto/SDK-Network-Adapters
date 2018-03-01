@@ -79,7 +79,7 @@ public class AppLovinCustomEventInterstitial
         this.context = context;
 
         sdk = retrieveSdk( serverExtras, context );
-        sdk.setPluginVersion( "MoPub-2.1.1" );
+        sdk.setPluginVersion( "MoPub-2.1.2" );
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
         final String serverExtrasZoneId = serverExtras != null ? serverExtras.get( "zone_id" ) : null;
