@@ -44,6 +44,9 @@ else
     rm -R build/*
 fi
 
+# Replace placeholder package name
+LC_ALL=C sed -i -- 's/YOUR_PACKAGE_NAME/com.applovin.mediation.mopub/g' ../*.java
+
 # Compile source files into build folder
 javac -classpath \
     "${ANDROID_SDK_JAR}:${ANDROID_SUPPORT_ANNOTATIONS_JAR}:${APPLOVIN_SDK_JAR}:${MOPUB_SDK_JAR_BASE}:${MOPUB_SDK_JAR_BANNER}:${MOPUB_SDK_JAR_INTER}:${MOPUB_SDK_JAR_REWARD}:${MOPUB_SDK_JAR_NATIVE}" \
