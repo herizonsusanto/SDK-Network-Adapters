@@ -34,6 +34,9 @@ else
     rm -R build/*
 fi
 
+# Replace placeholder package name
+LC_ALL=C sed -i '' 's/YOUR_PACKAGE_NAME/com.applovin.mediation/g' ../*.java
+
 # Compile source files into build folder
 javac -classpath \
     "${ANDROID_SDK_JAR}:${APPLOVIN_SDK_JAR}:${ADMOB_SDK_JAR}" \
