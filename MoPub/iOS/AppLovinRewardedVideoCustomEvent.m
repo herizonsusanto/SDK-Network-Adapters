@@ -16,12 +16,17 @@
     #import "ALIncentivizedInterstitialAd.h"
 #endif
 
+// Convenience macro for checking if AppLovin SDK has support for zones
+#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define DEFAULT_ZONE @""
+
 // This class implementation with the old classname is left here for backwards compatibility purposes.
 @implementation AppLovinRewardedCustomEvent
 @end
 
 @interface AppLovinRewardedVideoCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
+@property (nonatomic, strong) ALSdk *sdk;
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
 
 @property (nonatomic, assign) BOOL fullyWatched;
@@ -34,22 +39,65 @@
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
+// A dictionary of Zone -> `ALIncentivizedInterstitialAd` to be shared by instances of the custom event.
+// This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `ALIncentivizedInterstitialAd`)
+// on every ad load regardless if ad was actually displayed or not.
+static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobalIncentivizedInterstitialAds;
+
+#pragma mark - Class Initialization
+
++ (void)initialize
+{
+    [super initialize];
+    
+    ALGlobalIncentivizedInterstitialAds = [NSMutableDictionary dictionary];
+}
+
 #pragma mark - MPRewardedVideoCustomEvent Overridden Methods
 
 - (void)requestRewardedVideoWithCustomEventInfo:(NSDictionary *)info
 {
     [self log: @"Requesting AppLovin rewarded video with info: %@", info];
     
-    [[ALSdk shared] setPluginVersion: @"MoPub-2.2"];
+    self.sdk = [self SDKFromCustomEventInfo: info];
+    [self.sdk setPluginVersion: @"MoPub-2.1.2"];
     
-    if ( [self hasAdAvailable] )
+    // Zones support is available on AppLovin SDK 4.5.0 and higher
+    NSString *zoneIdentifier;
+    if ( HAS_ZONES_SUPPORT(self.sdk) && info[@"zone_id"] )
     {
-        [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
+        zoneIdentifier = info[@"zone_id"];
     }
     else
     {
-        [self.incent preloadAndNotify: self];
+        zoneIdentifier = DEFAULT_ZONE;
     }
+    
+    // Check if incentivized ad for zone already exists
+    if ( ALGlobalIncentivizedInterstitialAds[zoneIdentifier] )
+    {
+        self.incent = ALGlobalIncentivizedInterstitialAds[zoneIdentifier];
+    }
+    else
+    {
+        // If this is a default Zone, create the incentivized ad normally
+        if ( [DEFAULT_ZONE isEqualToString: zoneIdentifier] )
+        {
+            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
+        }
+        // Otherwise, use the Zones API
+        else
+        {
+            self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
+        }
+        
+        ALGlobalIncentivizedInterstitialAds[zoneIdentifier] = self.incent;
+    }
+    
+    self.incent.adVideoPlaybackDelegate = self;
+    self.incent.adDisplayDelegate = self;
+    
+    [self.incent preloadAndNotify: self];
 }
 
 - (BOOL)hasAdAvailable
@@ -72,7 +120,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
         
         NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
-                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
+                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adapter requested to display a rewarded video before one was loaded"}];
         
         [self.delegate rewardedVideoDidFailToPlayForCustomEvent: self error: error];
     }
@@ -183,16 +231,22 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 #pragma mark - Incentivized Interstitial
 
-- (ALIncentivizedInterstitialAd *)incent
+/**
+ * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
+ */
+- (ALIncentivizedInterstitialAd *)incentivizedInterstitialAdWithZoneIdentifier:(NSString *)zoneIdentifier
 {
-    if ( !_incent )
-    {
-        _incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
-        _incent.adVideoPlaybackDelegate = self;
-        _incent.adDisplayDelegate = self;
-    }
+    ALIncentivizedInterstitialAd *incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
     
-    return _incent;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+    if ( [incent respondsToSelector: @selector(setZoneIdentifier:)] )
+    {
+        [incent performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    }
+#pragma clang diagnostic pop
+    
+    return incent;
 }
 
 #pragma mark - Utility Methods
@@ -227,6 +281,19 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     else
     {
         return MOPUBErrorUnknown;
+    }
+}
+
+- (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
+{
+    NSString *SDKKey = info[@"sdk_key"];
+    if ( SDKKey.length > 0 )
+    {
+        return [ALSdk sharedWithKey: SDKKey];
+    }
+    else
+    {
+        return [ALSdk shared];
     }
 }
 
