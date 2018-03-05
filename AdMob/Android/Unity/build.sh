@@ -29,7 +29,7 @@ ADMOB_SDK_JAR=$3
 
 # Setup build folder
 if [ ! -d "build" ]; then
-	mkdir build
+    mkdir build
 else
     rm -R build/*
 fi

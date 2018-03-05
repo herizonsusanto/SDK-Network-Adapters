@@ -39,7 +39,7 @@ MOPUB_SDK_JAR_NATIVE=$8
 
 # Setup build folder
 if [ ! -d "build" ]; then
-	mkdir build
+    mkdir build
 else
     rm -R build/*
 fi
