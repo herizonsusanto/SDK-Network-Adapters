@@ -19,6 +19,8 @@
 #  Example Usage: ./build.sh {ANDROID_SDK_JAR} {ANDROID_ANNOTATIONS_JAR} {APPLOVIN_SDK_JAR} {MOPUB_BASE_SDK_JAR} {MOPUB_BANNER_SDK_JAR} {MOPUB_INTERSTITIAL_SDK_JAR} {MOPUB_REWARDED_SDK_JAR} {MOPUB_NATIVE_ADS_SDK_JAR}
 #
 
+# TODO: Automatically rename packages
+
 # Input parameters check
 if [ "$#" -lt 8 ]; then
     echo "Invalid number of parameters"
@@ -35,19 +37,21 @@ MOPUB_SDK_JAR_INTER=$6
 MOPUB_SDK_JAR_REWARD=$7
 MOPUB_SDK_JAR_NATIVE=$8
 
-# Create build folder
-mkdir ../build/
+# Setup build folder
+if [ ! -d "build" ]; then
+	mkdir build
+else
+    rm -R build/*
+fi
 
 # Compile source files into build folder
 javac -classpath \
     "${ANDROID_SDK_JAR}:${ANDROID_SUPPORT_ANNOTATIONS_JAR}:${APPLOVIN_SDK_JAR}:${MOPUB_SDK_JAR_BASE}:${MOPUB_SDK_JAR_BANNER}:${MOPUB_SDK_JAR_INTER}:${MOPUB_SDK_JAR_REWARD}:${MOPUB_SDK_JAR_NATIVE}" \
     -source 1.7 \
     -target 1.7 \
-    -d ../build/ \
+    -d build \
     ../*.java
 
 # Package compiled files into JAR
-jar cvf applovin-mopub-adapter.jar ../build/*
-
-# Clean up build folder
-rm -R ../build/
+cd build
+jar cvf ../applovin-mopub-adapters.jar *
