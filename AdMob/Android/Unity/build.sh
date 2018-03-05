@@ -35,7 +35,7 @@ else
 fi
 
 # Replace placeholder package name
-LC_ALL=C sed -i 's/YOUR_PACKAGE_NAME/com.applovin.mediation/g' ../*.java
+LC_ALL=C sed -i '' 's/YOUR_PACKAGE_NAME/com.applovin.mediation/g' ../*.java
 
 # Compile source files into build folder
 javac -classpath \
