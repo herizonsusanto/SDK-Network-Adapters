@@ -73,7 +73,7 @@ public class AppLovinCustomEventBanner
         if ( adSize != null )
         {
             sdk = retrieveSdk( serverExtras, context );
-            sdk.setPluginVersion( "MoPub-2.1.2" );
+            sdk.setPluginVersion( "MoPub-2.1.3" );
 
             final AppLovinAdView adView = new AppLovinAdView( sdk, adSize, context );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
