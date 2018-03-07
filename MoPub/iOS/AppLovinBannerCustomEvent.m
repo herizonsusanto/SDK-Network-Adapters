@@ -160,13 +160,13 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         // Assume fluid width, and check for height with offset tolerance
         
         CGFloat bannerOffset = ABS(kALBannerStandardHeight - size.height);
+        CGFloat leaderOffset = ABS(kALLeaderStandardHeight - size.height);
+        
         if ( bannerOffset <= kALBannerHeightOffsetTolerance )
         {
             return [ALAdSize sizeBanner];
         }
-        
-        CGFloat leaderOffset = ABS(kALLeaderStandardHeight - size.height);
-        if ( leaderOffset <= kALLeaderHeightOffsetTolerance )
+        else if ( leaderOffset <= kALLeaderHeightOffsetTolerance )
         {
             return [ALAdSize sizeLeader];
         }
