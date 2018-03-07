@@ -40,9 +40,10 @@ public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
-
+    
     private static final int BANNER_STANDARD_HEIGHT         = 50;
     private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
+    private static final int LEADER_STANDARD_HEIGHT         = 90;
 
     private static final String AD_WIDTH_KEY  = "com_mopub_ad_width";
     private static final String AD_HEIGHT_KEY = "com_mopub_ad_height";
@@ -208,6 +209,10 @@ public class AppLovinCustomEventBanner
                 if ( offset <= BANNER_HEIGHT_OFFSET_TOLERANCE )
                 {
                     return AppLovinAdSize.BANNER;
+                }
+                else if ( height == LEADER_STANDARD_HEIGHT || height == AppLovinAdSize.LEADER.getHeight() )
+                {
+                    return AppLovinAdSize.LEADER;
                 }
                 else if ( height <= AppLovinAdSize.MREC.getHeight() )
                 {
