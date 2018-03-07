@@ -74,13 +74,6 @@ public class AppLovinCustomEventBanner
             sdk.setPluginVersion( "MoPub-2.1.2" );
 
             final AppLovinAdView adView = new AppLovinAdView( sdk, adSize, context );
-
-            // Set zoneId if needed
-            if ( serverExtras != null && serverExtras.containsKey( "zone_id" ) )
-            {
-                final String zoneId = serverExtras.get( "zone_id" );
-            }
-
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
             {
                 @Override
