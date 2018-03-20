@@ -62,7 +62,7 @@ public class AppLovinCustomEventBanner
         if ( appLovinAdSize != null )
         {
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-            sdk.setPluginVersion( "AdMob-2.1" );
+            sdk.setPluginVersion( "AdMob-2.2.0" );
 
             adView = createAdView( appLovinAdSize, customEventExtras, context, customEventBannerListener );
             adView.setAdLoadListener( new AppLovinAdLoadListener()
