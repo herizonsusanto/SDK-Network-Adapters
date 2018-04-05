@@ -131,7 +131,7 @@ public class AppLovinCustomEventBanner
                             }
                             catch ( Throwable th )
                             {
-                                log( ERROR, "Unable to notify listener of successful ad load." );
+                                log( ERROR, "Unable to notify listener of successful ad load.", th );
                             }
                         }
                     } );
@@ -154,7 +154,7 @@ public class AppLovinCustomEventBanner
                             }
                             catch ( Throwable th )
                             {
-                                log( ERROR, "Unable to notify listener of failure to receive ad." );
+                                log( ERROR, "Unable to notify listener of failure to receive ad.", th );
                             }
                         }
                     } );

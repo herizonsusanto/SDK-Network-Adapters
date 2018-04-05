@@ -165,7 +165,7 @@ public class AppLovinCustomEventInterstitial
                 }
                 catch ( Throwable th )
                 {
-                    log( ERROR, "Unable to notify listener of successful ad load." );
+                    log( ERROR, "Unable to notify listener of successful ad load.", th );
                 }
             }
         } );
@@ -187,7 +187,7 @@ public class AppLovinCustomEventInterstitial
                 }
                 catch ( Throwable th )
                 {
-                    log( ERROR, "Unable to notify listener of failure to receive ad." );
+                    log( ERROR, "Unable to notify listener of failure to receive ad.", th );
                 }
             }
         } );
@@ -296,9 +296,14 @@ public class AppLovinCustomEventInterstitial
 
     private static void log(final int priority, final String message)
     {
+        log( priority, message, null );
+    }
+
+    private static void log(final int priority, final String message, final Throwable th)
+    {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinInterstitial", message );
+            Log.println( priority, "AppLovinInterstitial", message + ( ( th == null ) ? "" : Log.getStackTraceString( th ) ) );
         }
     }
 
