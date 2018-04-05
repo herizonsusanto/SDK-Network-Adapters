@@ -227,7 +227,7 @@ public class AppLovinCustomEventRewardedVideo
         if ( fullyWatched && reward != null )
         {
             log( DEBUG, "Rewarded" + reward.getAmount() + " " + reward.getLabel() );
-            MoPubRewardedVideoManager.onRewardedVideoCompleted( AppLovinCustomEventRewardedVideo.this.getClass(), "", reward );
+            MoPubRewardedVideoManager.onRewardedVideoCompleted( getClass(), "", reward );
         }
 
         MoPubRewardedVideoManager.onRewardedVideoClosed( getClass(), "" );
