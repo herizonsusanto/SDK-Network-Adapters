@@ -1,4 +1,4 @@
-package MoPub.Android;
+package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
@@ -329,7 +329,7 @@ public class AppLovinCustomEventInterstitial
     /**
      * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
      */
-    static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    private static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
     {
         final String sdkKey = serverExtras != null ? serverExtras.get( "sdk_key" ) : null;
         final AppLovinSdk sdk;
