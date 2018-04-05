@@ -1,4 +1,4 @@
-package YOUR_PACKAGE_NAME;
+package MoPub.Android;
 
 import android.app.Activity;
 import android.content.Context;
@@ -349,7 +349,7 @@ public class AppLovinCustomEventInterstitial
     /**
      * Performs the given runnable on the main thread.
      */
-    public static void runOnUiThread(final Runnable runnable)
+    private static void runOnUiThread(final Runnable runnable)
     {
         if ( Looper.myLooper() == Looper.getMainLooper() )
         {

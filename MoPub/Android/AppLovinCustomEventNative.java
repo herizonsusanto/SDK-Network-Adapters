@@ -1,4 +1,4 @@
-package YOUR_PACKAGE_NAME;
+package MoPub.Android;
 
 import android.content.Context;
 import android.os.Handler;
@@ -237,7 +237,7 @@ public class AppLovinCustomEventNative
     /**
      * Performs the given runnable on the main thread.
      */
-    public static void runOnUiThread(final Runnable runnable)
+    private static void runOnUiThread(final Runnable runnable)
     {
         if ( Looper.myLooper() == Looper.getMainLooper() )
         {
