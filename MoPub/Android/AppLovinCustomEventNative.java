@@ -40,7 +40,7 @@ public class AppLovinCustomEventNative
         implements AppLovinNativeAdLoadListener
 {
     private static final boolean LOGGING_ENABLED = true;
-    private static final Handler uiHandler       = new Handler( Looper.getMainLooper() );
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
 
     private AppLovinSdk               sdk;
     private CustomEventNativeListener nativeListener;
@@ -245,7 +245,7 @@ public class AppLovinCustomEventNative
         }
         else
         {
-            uiHandler.post( runnable );
+            UI_HANDLER.post( runnable );
         }
     }
 

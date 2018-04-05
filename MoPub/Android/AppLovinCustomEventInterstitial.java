@@ -2,6 +2,8 @@ package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -43,6 +45,8 @@ public class AppLovinCustomEventInterstitial
 {
     private static final boolean LOGGING_ENABLED = true;
     private static final String  DEFAULT_ZONE    = "";
+
+    private static final Handler UI_HANDLER = new Handler( Looper.getMainLooper() );
 
     private AppLovinSdk                     sdk;
     private CustomEventInterstitialListener listener;
@@ -150,14 +154,29 @@ public class AppLovinCustomEventInterstitial
 
         enqueueAd( ad, zoneId );
 
-        listener.onInterstitialLoaded();
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                listener.onInterstitialLoaded();
+            }
+        } );
     }
 
     @Override
     public void failedToReceiveAd(final int errorCode)
     {
         log( ERROR, "Interstitial failed to load with error: " + errorCode );
-        listener.onInterstitialFailed( toMoPubErrorCode( errorCode ) );
+
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                listener.onInterstitialFailed( toMoPubErrorCode( errorCode ) );
+            }
+        } );
     }
 
     //
@@ -311,5 +330,20 @@ public class AppLovinCustomEventInterstitial
         }
 
         return sdk;
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    public static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            UI_HANDLER.post( runnable );
+        }
     }
 }

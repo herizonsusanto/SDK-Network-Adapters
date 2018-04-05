@@ -2,6 +2,8 @@ package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -15,7 +17,6 @@ import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
-import com.applovin.sdk.AppLovinSdkUtils;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
@@ -40,6 +41,7 @@ public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
 
     private static final int BANNER_STANDARD_HEIGHT         = 50;
     private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
@@ -114,7 +116,7 @@ public class AppLovinCustomEventBanner
                 public void adReceived(final AppLovinAd ad)
                 {
                     // Ensure logic is ran on main queue
-                    AppLovinSdkUtils.runOnUiThread( new Runnable()
+                    runOnUiThread( new Runnable()
                     {
                         @Override
                         public void run()
@@ -131,7 +133,7 @@ public class AppLovinCustomEventBanner
                 public void failedToReceiveAd(final int errorCode)
                 {
                     // Ensure logic is ran on main queue
-                    AppLovinSdkUtils.runOnUiThread( new Runnable()
+                    runOnUiThread( new Runnable()
                     {
                         @Override
                         public void run()
@@ -351,4 +353,17 @@ public class AppLovinCustomEventBanner
             customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
         }
     }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    public static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            UI_HANDLER.post( runnable );
 }

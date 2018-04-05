@@ -2,6 +2,8 @@ package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -45,6 +47,8 @@ public class AppLovinCustomEventRewardedVideo
 {
     private static final boolean LOGGING_ENABLED = true;
     private static final String  DEFAULT_ZONE    = "";
+
+    private static final Handler UI_HANDLER = new Handler( Looper.getMainLooper() );
 
     // A map of Zone -> `AppLovinIncentivizedInterstitial` to be shared by instances of the custom event.
     // This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `AppLovinIncentivizedInterstitial`)
@@ -139,7 +143,7 @@ public class AppLovinCustomEventRewardedVideo
         else
         {
             log( ERROR, "Failed to show an AppLovin rewarded video before one was loaded" );
-            MoPubRewardedVideoManager.onRewardedVideoPlaybackError( this.getClass(), "", MoPubErrorCode.VIDEO_PLAYBACK_ERROR );
+            MoPubRewardedVideoManager.onRewardedVideoPlaybackError( getClass(), "", MoPubErrorCode.VIDEO_PLAYBACK_ERROR );
         }
     }
 
@@ -168,14 +172,30 @@ public class AppLovinCustomEventRewardedVideo
     public void adReceived(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video did load ad: " + ad.getAdIdNumber() );
-        MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( this.getClass(), "" );
+
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( AppLovinCustomEventRewardedVideo.this.getClass(), "" );
+            }
+        } );
     }
 
     @Override
     public void failedToReceiveAd(final int errorCode)
     {
         log( DEBUG, "Rewarded video failed to load with error: " + errorCode );
-        MoPubRewardedVideoManager.onRewardedVideoLoadFailure( this.getClass(), "", toMoPubErrorCode( errorCode ) );
+
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                MoPubRewardedVideoManager.onRewardedVideoLoadFailure( AppLovinCustomEventRewardedVideo.this.getClass(), "", toMoPubErrorCode( errorCode ) );
+            }
+        } );
     }
 
     //
@@ -186,7 +206,7 @@ public class AppLovinCustomEventRewardedVideo
     public void adDisplayed(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video displayed" );
-        MoPubRewardedVideoManager.onRewardedVideoStarted( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoStarted( getClass(), "" );
     }
 
     @Override
@@ -197,10 +217,10 @@ public class AppLovinCustomEventRewardedVideo
         if ( fullyWatched && reward != null )
         {
             log( DEBUG, "Rewarded" + reward.getAmount() + " " + reward.getLabel() );
-            MoPubRewardedVideoManager.onRewardedVideoCompleted( this.getClass(), "", reward );
+            MoPubRewardedVideoManager.onRewardedVideoCompleted( AppLovinCustomEventRewardedVideo.this.getClass(), "", reward );
         }
 
-        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoClosed( getClass(), "" );
     }
 
     //
@@ -211,7 +231,7 @@ public class AppLovinCustomEventRewardedVideo
     public void adClicked(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video clicked" );
-        MoPubRewardedVideoManager.onRewardedVideoClicked( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoClicked( getClass(), "" );
     }
 
     //
@@ -258,7 +278,7 @@ public class AppLovinCustomEventRewardedVideo
     public void userDeclinedToViewAd(final AppLovinAd appLovinAd)
     {
         log( DEBUG, "User declined to view rewarded video" );
-        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoClosed( getClass(), "" );
     }
 
     @Override
@@ -347,5 +367,20 @@ public class AppLovinCustomEventRewardedVideo
         }
 
         return sdk;
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    public static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            UI_HANDLER.post( runnable );
+        }
     }
 }
