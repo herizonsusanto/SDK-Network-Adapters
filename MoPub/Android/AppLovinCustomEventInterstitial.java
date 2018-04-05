@@ -159,7 +159,14 @@ public class AppLovinCustomEventInterstitial
             @Override
             public void run()
             {
-                listener.onInterstitialLoaded();
+                try
+                {
+                    listener.onInterstitialLoaded();
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of successful ad load." );
+                }
             }
         } );
     }
@@ -174,7 +181,14 @@ public class AppLovinCustomEventInterstitial
             @Override
             public void run()
             {
-                listener.onInterstitialFailed( toMoPubErrorCode( errorCode ) );
+                try
+                {
+                    listener.onInterstitialFailed( toMoPubErrorCode( errorCode ) );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of failure to receive ad." );
+                }
             }
         } );
     }

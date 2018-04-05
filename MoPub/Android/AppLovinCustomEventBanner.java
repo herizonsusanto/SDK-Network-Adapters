@@ -124,7 +124,15 @@ public class AppLovinCustomEventBanner
                             adView.renderAd( ad );
 
                             log( DEBUG, "Successfully loaded banner ad" );
-                            customEventBannerListener.onBannerLoaded( adView );
+
+                            try
+                            {
+                                customEventBannerListener.onBannerLoaded( adView );
+                            }
+                            catch ( Throwable th )
+                            {
+                                log( ERROR, "Unable to notify listener of successful ad load." );
+                            }
                         }
                     } );
                 }
@@ -139,7 +147,15 @@ public class AppLovinCustomEventBanner
                         public void run()
                         {
                             log( ERROR, "Failed to load banner ad with code: " + errorCode );
-                            customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+
+                            try
+                            {
+                                customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+                            }
+                            catch ( Throwable th )
+                            {
+                                log( ERROR, "Unable to notify listener of failure to receive ad." );
+                            }
                         }
                     } );
                 }

@@ -174,7 +174,14 @@ public class AppLovinCustomEventRewardedVideo
             @Override
             public void run()
             {
-                MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( AppLovinCustomEventRewardedVideo.this.getClass(), "" );
+                try
+                {
+                    MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( AppLovinCustomEventRewardedVideo.this.getClass(), "" );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of successful ad load." );
+                }
             }
         } );
     }
@@ -189,7 +196,14 @@ public class AppLovinCustomEventRewardedVideo
             @Override
             public void run()
             {
-                MoPubRewardedVideoManager.onRewardedVideoLoadFailure( AppLovinCustomEventRewardedVideo.this.getClass(), "", toMoPubErrorCode( errorCode ) );
+                try
+                {
+                    MoPubRewardedVideoManager.onRewardedVideoLoadFailure( AppLovinCustomEventRewardedVideo.this.getClass(), "", toMoPubErrorCode( errorCode ) );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of failure to receive ad." );
+                }
             }
         } );
     }
