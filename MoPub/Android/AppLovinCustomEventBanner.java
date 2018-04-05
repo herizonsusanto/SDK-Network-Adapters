@@ -366,4 +366,6 @@ public class AppLovinCustomEventBanner
         else
         {
             UI_HANDLER.post( runnable );
+        }
+    }
 }
