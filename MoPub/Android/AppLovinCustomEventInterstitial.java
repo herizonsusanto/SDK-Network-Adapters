@@ -2,6 +2,8 @@ package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -44,6 +46,8 @@ public class AppLovinCustomEventInterstitial
     private static final boolean LOGGING_ENABLED = true;
     private static final String  DEFAULT_ZONE    = "";
 
+    private static final Handler UI_HANDLER = new Handler( Looper.getMainLooper() );
+
     private AppLovinSdk                     sdk;
     private CustomEventInterstitialListener listener;
     private Context                         context;
@@ -79,7 +83,7 @@ public class AppLovinCustomEventInterstitial
         this.context = context;
 
         sdk = retrieveSdk( serverExtras, context );
-        sdk.setPluginVersion( "MoPub-2.1.3" );
+        sdk.setPluginVersion( "MoPub-2.1.4" );
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
         final String serverExtrasZoneId = serverExtras != null ? serverExtras.get( "zone_id" ) : null;
@@ -150,14 +154,43 @@ public class AppLovinCustomEventInterstitial
 
         enqueueAd( ad, zoneId );
 
-        listener.onInterstitialLoaded();
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    listener.onInterstitialLoaded();
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of successful ad load.", th );
+                }
+            }
+        } );
     }
 
     @Override
     public void failedToReceiveAd(final int errorCode)
     {
         log( ERROR, "Interstitial failed to load with error: " + errorCode );
-        listener.onInterstitialFailed( toMoPubErrorCode( errorCode ) );
+
+        runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    listener.onInterstitialFailed( toMoPubErrorCode( errorCode ) );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of failure to receive ad.", th );
+                }
+            }
+        } );
     }
 
     //
@@ -263,9 +296,14 @@ public class AppLovinCustomEventInterstitial
 
     private static void log(final int priority, final String message)
     {
+        log( priority, message, null );
+    }
+
+    private static void log(final int priority, final String message, final Throwable th)
+    {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinInterstitial", message );
+            Log.println( priority, "AppLovinInterstitial", message + ( ( th == null ) ? "" : Log.getStackTraceString( th ) ) );
         }
     }
 
@@ -296,7 +334,7 @@ public class AppLovinCustomEventInterstitial
     /**
      * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
      */
-    static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    private static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
     {
         final String sdkKey = serverExtras != null ? serverExtras.get( "sdk_key" ) : null;
         final AppLovinSdk sdk;
@@ -311,5 +349,20 @@ public class AppLovinCustomEventInterstitial
         }
 
         return sdk;
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    private static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            UI_HANDLER.post( runnable );
+        }
     }
 }

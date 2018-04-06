@@ -2,6 +2,8 @@ package YOUR_PACKAGE_NAME;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -15,7 +17,6 @@ import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
-import com.applovin.sdk.AppLovinSdkUtils;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
@@ -40,6 +41,7 @@ public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
 
     private static final int BANNER_STANDARD_HEIGHT         = 50;
     private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
@@ -73,7 +75,7 @@ public class AppLovinCustomEventBanner
         if ( adSize != null )
         {
             sdk = retrieveSdk( serverExtras, context );
-            sdk.setPluginVersion( "MoPub-2.1.3" );
+            sdk.setPluginVersion( "MoPub-2.1.4" );
 
             final AppLovinAdView adView = new AppLovinAdView( sdk, adSize, context );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
@@ -114,7 +116,7 @@ public class AppLovinCustomEventBanner
                 public void adReceived(final AppLovinAd ad)
                 {
                     // Ensure logic is ran on main queue
-                    AppLovinSdkUtils.runOnUiThread( new Runnable()
+                    runOnUiThread( new Runnable()
                     {
                         @Override
                         public void run()
@@ -122,7 +124,15 @@ public class AppLovinCustomEventBanner
                             adView.renderAd( ad );
 
                             log( DEBUG, "Successfully loaded banner ad" );
-                            customEventBannerListener.onBannerLoaded( adView );
+
+                            try
+                            {
+                                customEventBannerListener.onBannerLoaded( adView );
+                            }
+                            catch ( Throwable th )
+                            {
+                                log( ERROR, "Unable to notify listener of successful ad load.", th );
+                            }
                         }
                     } );
                 }
@@ -131,13 +141,21 @@ public class AppLovinCustomEventBanner
                 public void failedToReceiveAd(final int errorCode)
                 {
                     // Ensure logic is ran on main queue
-                    AppLovinSdkUtils.runOnUiThread( new Runnable()
+                    runOnUiThread( new Runnable()
                     {
                         @Override
                         public void run()
                         {
                             log( ERROR, "Failed to load banner ad with code: " + errorCode );
-                            customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+
+                            try
+                            {
+                                customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+                            }
+                            catch ( Throwable th )
+                            {
+                                log( ERROR, "Unable to notify listener of failure to receive ad.", th );
+                            }
                         }
                     } );
                 }
@@ -320,7 +338,7 @@ public class AppLovinCustomEventBanner
     /**
      * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
      */
-    static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    private static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
     {
         final String sdkKey = serverExtras != null ? serverExtras.get( "sdk_key" ) : null;
         final AppLovinSdk sdk;
@@ -349,6 +367,21 @@ public class AppLovinCustomEventBanner
         {
             log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
             customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
+        }
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    private static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            UI_HANDLER.post( runnable );
         }
     }
 }

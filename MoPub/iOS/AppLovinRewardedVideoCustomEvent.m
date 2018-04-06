@@ -60,7 +60,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     [self log: @"Requesting AppLovin rewarded video with info: %@", info];
     
     self.sdk = [self SDKFromCustomEventInfo: info];
-    [self.sdk setPluginVersion: @"MoPub-2.1.3"];
+    [self.sdk setPluginVersion: @"MoPub-2.1.4"];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     NSString *zoneIdentifier;
@@ -134,7 +134,10 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
-    [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
+    });
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
@@ -144,7 +147,10 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                          code: [self toMoPubErrorCode: code]
                                      userInfo: nil];
-    [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent: self error: error];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent: self error: error];
+    });
 }
 
 #pragma mark - Ad Display Delegate

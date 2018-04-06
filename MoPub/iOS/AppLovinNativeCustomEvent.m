@@ -47,7 +47,7 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     [[self class] log: @"Requesting AppLovin native ad with info: %@", info];
     
     self.sdk = [self SDKFromCustomEventInfo: info];
-    [self.sdk setPluginVersion: @"MoPub-2.1.3"];
+    [self.sdk setPluginVersion: @"MoPub-2.1.4"];
     
     [self.sdk.nativeAdService loadNativeAdGroupOfCount: 1 andNotify: self];
 }
@@ -74,7 +74,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
          AppLovinNativeAdapter *adapter = [[AppLovinNativeAdapter alloc] initWithNativeAd: nativeAd];
          MPNativeAd *nativeAd = [[MPNativeAd alloc] initWithAdAdapter: adapter];
          
-         [self.delegate nativeCustomEvent: self didLoadAd: nativeAd];
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self.delegate nativeCustomEvent: self didLoadAd: nativeAd];
+         });
          
          [adapter willAttachToView: nil];
      }];
@@ -87,7 +89,10 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                          code: MPNativeAdErrorNoInventory
                                      userInfo: nil];
-    [self.delegate nativeCustomEvent: self didFailToLoadAdWithError: error];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.delegate nativeCustomEvent: self didFailToLoadAdWithError: error];
+    });
 }
 
 #pragma mark - Utility Methods

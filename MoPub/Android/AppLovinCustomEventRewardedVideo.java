@@ -73,7 +73,7 @@ public class AppLovinCustomEventRewardedVideo
         if ( !initialized )
         {
             sdk = retrieveSdk( serverExtras, activity );
-            sdk.setPluginVersion( "MoPub-2.1.3" );
+            sdk.setPluginVersion( "MoPub-2.1.4" );
 
             initialized = true;
 
@@ -139,7 +139,7 @@ public class AppLovinCustomEventRewardedVideo
         else
         {
             log( ERROR, "Failed to show an AppLovin rewarded video before one was loaded" );
-            MoPubRewardedVideoManager.onRewardedVideoPlaybackError( this.getClass(), "", MoPubErrorCode.VIDEO_PLAYBACK_ERROR );
+            MoPubRewardedVideoManager.onRewardedVideoPlaybackError( getClass(), "", MoPubErrorCode.VIDEO_PLAYBACK_ERROR );
         }
     }
 
@@ -168,14 +168,44 @@ public class AppLovinCustomEventRewardedVideo
     public void adReceived(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video did load ad: " + ad.getAdIdNumber() );
-        MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( this.getClass(), "" );
+
+        parentActivity.runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    MoPubRewardedVideoManager.onRewardedVideoLoadSuccess( AppLovinCustomEventRewardedVideo.this.getClass(), "" );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of successful ad load.", th );
+                }
+            }
+        } );
     }
 
     @Override
     public void failedToReceiveAd(final int errorCode)
     {
         log( DEBUG, "Rewarded video failed to load with error: " + errorCode );
-        MoPubRewardedVideoManager.onRewardedVideoLoadFailure( this.getClass(), "", toMoPubErrorCode( errorCode ) );
+
+        parentActivity.runOnUiThread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    MoPubRewardedVideoManager.onRewardedVideoLoadFailure( AppLovinCustomEventRewardedVideo.this.getClass(), "", toMoPubErrorCode( errorCode ) );
+                }
+                catch ( Throwable th )
+                {
+                    log( ERROR, "Unable to notify listener of failure to receive ad.", th );
+                }
+            }
+        } );
     }
 
     //
@@ -186,7 +216,7 @@ public class AppLovinCustomEventRewardedVideo
     public void adDisplayed(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video displayed" );
-        MoPubRewardedVideoManager.onRewardedVideoStarted( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoStarted( getClass(), "" );
     }
 
     @Override
@@ -197,10 +227,10 @@ public class AppLovinCustomEventRewardedVideo
         if ( fullyWatched && reward != null )
         {
             log( DEBUG, "Rewarded" + reward.getAmount() + " " + reward.getLabel() );
-            MoPubRewardedVideoManager.onRewardedVideoCompleted( this.getClass(), "", reward );
+            MoPubRewardedVideoManager.onRewardedVideoCompleted( getClass(), "", reward );
         }
 
-        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoClosed( getClass(), "" );
     }
 
     //
@@ -211,7 +241,7 @@ public class AppLovinCustomEventRewardedVideo
     public void adClicked(final AppLovinAd ad)
     {
         log( DEBUG, "Rewarded video clicked" );
-        MoPubRewardedVideoManager.onRewardedVideoClicked( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoClicked( getClass(), "" );
     }
 
     //
@@ -258,7 +288,7 @@ public class AppLovinCustomEventRewardedVideo
     public void userDeclinedToViewAd(final AppLovinAd appLovinAd)
     {
         log( DEBUG, "User declined to view rewarded video" );
-        MoPubRewardedVideoManager.onRewardedVideoClosed( this.getClass(), "" );
+        MoPubRewardedVideoManager.onRewardedVideoClosed( getClass(), "" );
     }
 
     @Override
@@ -299,9 +329,14 @@ public class AppLovinCustomEventRewardedVideo
 
     private static void log(final int priority, final String message)
     {
+        log( priority, message, null );
+    }
+
+    private static void log(final int priority, final String message, final Throwable th)
+    {
         if ( LOGGING_ENABLED )
         {
-            Log.println( priority, "AppLovinRewardedVideo", message );
+            Log.println( priority, "AppLovinRewardedVideo", message + ( ( th == null ) ? "" : Log.getStackTraceString( th ) ) );
         }
     }
 
@@ -332,7 +367,7 @@ public class AppLovinCustomEventRewardedVideo
     /**
      * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
      */
-    static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    private static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
     {
         final String sdkKey = serverExtras != null ? serverExtras.get( "sdk_key" ) : null;
         final AppLovinSdk sdk;
