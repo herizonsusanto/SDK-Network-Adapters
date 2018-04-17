@@ -56,6 +56,8 @@ public class AppLovinCustomEventRewardedVideo
     private boolean     fullyWatched;
     private MoPubReward reward;
 
+    static boolean firstLoad = true;
+
 
     //
     // MoPub Custom Event Methods
@@ -87,16 +89,9 @@ public class AppLovinCustomEventRewardedVideo
         parentActivity = activity;
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
-        final String zoneId;
-        if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
-        {
-            zoneId = serverExtras.get( "zone_id" );
-        }
-        else
-        {
-            zoneId = DEFAULT_ZONE;
-        }
+        final String zoneId = firstLoad ? "my_zone_id" : "your_zone_id";
 
+        firstLoad = false;
 
         // Check if incentivized ad for zone already exists
         if ( GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.containsKey( zoneId ) )
