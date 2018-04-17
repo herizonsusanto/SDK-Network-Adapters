@@ -73,7 +73,7 @@ public class AppLovinCustomEventRewardedVideo
         if ( !initialized )
         {
             sdk = retrieveSdk( serverExtras, activity );
-            sdk.setPluginVersion( "MoPub-2.1.4" );
+            sdk.setPluginVersion( "MoPub-2.1.5" );
 
             initialized = true;
 
