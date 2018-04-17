@@ -1,4 +1,4 @@
-package YOUR_PACKAGE_NAME;
+package AdMob.Android;
 
 /**
  * Created by thomasso on 10/10/17.
