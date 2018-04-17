@@ -82,7 +82,7 @@ public class ApplovinAdapter
         if ( !initialized )
         {
             AppLovinSdk.initializeSdk( context );
-            AppLovinSdk.getInstance( context ).setPluginVersion( "AdMob-2.0" );
+            AppLovinSdk.getInstance( context ).setPluginVersion( "AdMob-2.2.0" );
 
             initialized = true;
         }
@@ -230,8 +230,6 @@ public class ApplovinAdapter
                 listener.onAdFailedToLoad( ApplovinAdapter.this, toAdMobErrorCode( errorCode ) );
             }
         } );
-
-        // TODO: Add support for backfilling on regular ad request if invalid zone entered
     }
 
     //

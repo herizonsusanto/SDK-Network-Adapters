@@ -2,6 +2,9 @@ package MoPub.Android;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinAdView;
@@ -13,10 +16,10 @@ import com.applovin.sdk.AppLovinAdLoadListener;
 import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinSdk;
+import com.applovin.sdk.AppLovinSdkSettings;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -38,12 +41,17 @@ public class AppLovinCustomEventBanner
         extends CustomEventBanner
 {
     private static final boolean LOGGING_ENABLED = true;
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
 
     private static final int BANNER_STANDARD_HEIGHT         = 50;
     private static final int BANNER_HEIGHT_OFFSET_TOLERANCE = 10;
+    private static final int LEADER_STANDARD_HEIGHT         = 90;
+    private static final int LEADER_HEIGHT_OFFSET_TOLERANCE = 16;
 
     private static final String AD_WIDTH_KEY  = "com_mopub_ad_width";
     private static final String AD_HEIGHT_KEY = "com_mopub_ad_height";
+
+    private AppLovinSdk sdk;
 
     //
     // MoPub Custom Event Methods
@@ -61,34 +69,15 @@ public class AppLovinCustomEventBanner
             return;
         }
 
-        log( DEBUG, "Requesting AppLovin banner with localExtras: " + localExtras );
+        log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
 
         final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )
         {
-            final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-            sdk.setPluginVersion( "MoPub-2.1.0" );
+            sdk = retrieveSdk( serverExtras, context );
+            sdk.setPluginVersion( "MoPub-2.1.4" );
 
-            final AppLovinAdView adView = createAdView( adSize, serverExtras, context, customEventBannerListener );
-
-            adView.setAdLoadListener( new AppLovinAdLoadListener()
-            {
-                @Override
-                public void adReceived(final AppLovinAd ad)
-                {
-                    log( DEBUG, "Successfully loaded banner ad" );
-                    customEventBannerListener.onBannerLoaded( adView );
-                }
-
-                @Override
-                public void failedToReceiveAd(final int errorCode)
-                {
-                    log( ERROR, "Failed to load banner ad with code: " + errorCode );
-                    customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
-
-                    // TODO: Add support for backfilling on regular ad request if invalid zone entered
-                }
-            } );
+            final AppLovinAdView adView = new AppLovinAdView( sdk, adSize, context );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
             {
                 @Override
@@ -121,7 +110,76 @@ public class AppLovinCustomEventBanner
                 adView.setAdViewEventListener( (AppLovinAdViewEventListener) AppLovinAdViewEventListenerProxy.newInstance( customEventBannerListener ) );
             }
 
-            adView.loadNextAd();
+            final AppLovinAdLoadListener adLoadListener = new AppLovinAdLoadListener()
+            {
+                @Override
+                public void adReceived(final AppLovinAd ad)
+                {
+                    // Ensure logic is ran on main queue
+                    runOnUiThread( new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            adView.renderAd( ad );
+
+                            log( DEBUG, "Successfully loaded banner ad" );
+
+                            try
+                            {
+                                customEventBannerListener.onBannerLoaded( adView );
+                            }
+                            catch ( Throwable th )
+                            {
+                                log( ERROR, "Unable to notify listener of successful ad load.", th );
+                            }
+                        }
+                    } );
+                }
+
+                @Override
+                public void failedToReceiveAd(final int errorCode)
+                {
+                    // Ensure logic is ran on main queue
+                    runOnUiThread( new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            log( ERROR, "Failed to load banner ad with code: " + errorCode );
+
+                            try
+                            {
+                                customEventBannerListener.onBannerFailed( toMoPubErrorCode( errorCode ) );
+                            }
+                            catch ( Throwable th )
+                            {
+                                log( ERROR, "Unable to notify listener of failure to receive ad.", th );
+                            }
+                        }
+                    } );
+                }
+            };
+
+            // Zones support is available on AppLovin SDK 7.5.0 and higher
+            final String zoneId;
+            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
+            {
+                zoneId = serverExtras.get( "zone_id" );
+            }
+            else
+            {
+                zoneId = null;
+            }
+
+            if ( !TextUtils.isEmpty( zoneId ) )
+            {
+                loadNextAd( zoneId, adLoadListener, customEventBannerListener );
+            }
+            else
+            {
+                sdk.getAdService().loadNextAd( adSize, adLoadListener );
+            }
         }
         else
         {
@@ -158,11 +216,16 @@ public class AppLovinCustomEventBanner
                 log( DEBUG, "Valid width (" + width + ") and height (" + height + ") provided" );
 
                 // Assume fluid width, and check for height with offset tolerance
-                final int offset = Math.abs( BANNER_STANDARD_HEIGHT - height );
+                final int bannerOffset = Math.abs( BANNER_STANDARD_HEIGHT - height );
+                final int leaderOffset = Math.abs( LEADER_STANDARD_HEIGHT - height );
 
-                if ( offset <= BANNER_HEIGHT_OFFSET_TOLERANCE )
+                if ( bannerOffset <= BANNER_HEIGHT_OFFSET_TOLERANCE )
                 {
                     return AppLovinAdSize.BANNER;
+                }
+                else if ( leaderOffset <= LEADER_HEIGHT_OFFSET_TOLERANCE )
+                {
+                    return AppLovinAdSize.LEADER;
                 }
                 else if ( height <= AppLovinAdSize.MREC.getHeight() )
                 {
@@ -189,38 +252,6 @@ public class AppLovinCustomEventBanner
     //
     // Utility Methods
     //
-
-    private AppLovinAdView createAdView(final AppLovinAdSize size, final Map<String, String> serverExtras, final Context parentContext, final CustomEventBannerListener customEventBannerListener)
-    {
-        AppLovinAdView adView = null;
-
-        try
-        {
-            // AppLovin SDK < 7.1.0 uses an Activity, as opposed to Context in >= 7.1.0
-            final Class<?> contextClass = ( AppLovinSdk.VERSION_CODE < 710 ) ? Activity.class : Context.class;
-
-            // Zones support is available on AppLovin SDK 7.5.0 and higher
-            final Constructor<?> constructor;
-            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
-            {
-                // Dynamically create an instance of AppLovinAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
-                constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, String.class, contextClass );
-                adView = (AppLovinAdView) constructor.newInstance( size, serverExtras.get( "zone_id" ), parentContext );
-            }
-            else
-            {
-                constructor = AppLovinAdView.class.getConstructor( AppLovinAdSize.class, contextClass );
-                adView = (AppLovinAdView) constructor.newInstance( size, parentContext );
-            }
-        }
-        catch ( Throwable th )
-        {
-            log( ERROR, "Unable to get create AppLovinAdView." );
-            customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
-        }
-
-        return adView;
-    }
 
     private static void log(final int priority, final String message)
     {
@@ -301,6 +332,56 @@ public class AppLovinCustomEventBanner
             else if ( "adFailedToDisplay".equals( methodName ) ) {}
 
             return null;
+        }
+    }
+
+    /**
+     * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
+     */
+    private static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    {
+        final String sdkKey = serverExtras != null ? serverExtras.get( "sdk_key" ) : null;
+        final AppLovinSdk sdk;
+
+        if ( !TextUtils.isEmpty( sdkKey ) )
+        {
+            sdk = AppLovinSdk.getInstance( sdkKey, new AppLovinSdkSettings(), context );
+        }
+        else
+        {
+            sdk = AppLovinSdk.getInstance( context );
+        }
+
+        return sdk;
+    }
+
+    private void loadNextAd(final String zoneId, final AppLovinAdLoadListener adLoadListener, final CustomEventBannerListener customEventBannerListener)
+    {
+        // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
+        try
+        {
+            final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
+            method.invoke( sdk.getAdService(), zoneId, adLoadListener );
+        }
+        catch ( Throwable th )
+        {
+            log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
+            customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
+        }
+    }
+
+    /**
+     * Performs the given runnable on the main thread.
+     */
+    private static void runOnUiThread(final Runnable runnable)
+    {
+        if ( Looper.myLooper() == Looper.getMainLooper() )
+        {
+            runnable.run();
+        }
+        else
+        {
+            UI_HANDLER.post( runnable );
         }
     }
 }

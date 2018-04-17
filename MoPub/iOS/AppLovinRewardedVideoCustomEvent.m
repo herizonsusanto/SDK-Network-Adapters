@@ -17,7 +17,7 @@
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 // This class implementation with the old classname is left here for backwards compatibility purposes.
@@ -26,6 +26,7 @@
 
 @interface AppLovinRewardedVideoCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
 
+@property (nonatomic, strong) ALSdk *sdk;
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
 
 @property (nonatomic, assign) BOOL fullyWatched;
@@ -58,11 +59,12 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 {
     [self log: @"Requesting AppLovin rewarded video with info: %@", info];
     
-    [[ALSdk shared] setPluginVersion: @"MoPub-2.1.0"];
+    self.sdk = [self SDKFromCustomEventInfo: info];
+    [self.sdk setPluginVersion: @"MoPub-2.1.4"];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     NSString *zoneIdentifier;
-    if ( HAS_ZONES_SUPPORT && info[@"zone_id"] )
+    if ( HAS_ZONES_SUPPORT(self.sdk) && info[@"zone_id"] )
     {
         zoneIdentifier = info[@"zone_id"];
     }
@@ -81,7 +83,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         // If this is a default Zone, create the incentivized ad normally
         if ( [DEFAULT_ZONE isEqualToString: zoneIdentifier] )
         {
-            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: [ALSdk shared]];
+            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
         }
         // Otherwise, use the Zones API
         else
@@ -118,7 +120,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         
         NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
-                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adaptor requested to display a rewarded video before one was loaded"}];
+                                         userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adapter requested to display a rewarded video before one was loaded"}];
         
         [self.delegate rewardedVideoDidFailToPlayForCustomEvent: self error: error];
     }
@@ -132,7 +134,10 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
-    [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
+    });
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
@@ -142,9 +147,10 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                          code: [self toMoPubErrorCode: code]
                                      userInfo: nil];
-    [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent: self error: error];
     
-    // TODO: Add support for backfilling on regular ad request if invalid zone entered
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent: self error: error];
+    });
 }
 
 #pragma mark - Ad Display Delegate
@@ -236,16 +242,15 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
  */
 - (ALIncentivizedInterstitialAd *)incentivizedInterstitialAdWithZoneIdentifier:(NSString *)zoneIdentifier
 {
-    // Prematurely create instance of ALAdView to store initialized one in later
-    ALIncentivizedInterstitialAd *incent = [ALIncentivizedInterstitialAd alloc];
+    ALIncentivizedInterstitialAd *incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
     
-    // We must use NSInvocation over performSelector: for initializers
-    NSMethodSignature *methodSignature = [ALIncentivizedInterstitialAd instanceMethodSignatureForSelector: @selector(initWithZoneIdentifier:)];
-    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
-    [inv setSelector: @selector(initWithZoneIdentifier:)];
-    [inv setArgument: &zoneIdentifier atIndex: 2];
-    [inv setReturnValue: &incent];
-    [inv invokeWithTarget: incent];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+    if ( [incent respondsToSelector: @selector(setZoneIdentifier:)] )
+    {
+        [incent performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    }
+#pragma clang diagnostic pop
     
     return incent;
 }
@@ -282,6 +287,19 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     else
     {
         return MOPUBErrorUnknown;
+    }
+}
+
+- (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
+{
+    NSString *SDKKey = info[@"sdk_key"];
+    if ( SDKKey.length > 0 )
+    {
+        return [ALSdk sharedWithKey: SDKKey];
+    }
+    else
+    {
+        return [ALSdk shared];
     }
 }
 

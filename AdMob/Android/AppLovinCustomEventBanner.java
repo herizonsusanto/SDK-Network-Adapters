@@ -62,7 +62,7 @@ public class AppLovinCustomEventBanner
         if ( appLovinAdSize != null )
         {
             final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-            sdk.setPluginVersion( "AdMob-2.1" );
+            sdk.setPluginVersion( "AdMob-2.2.0" );
 
             adView = createAdView( appLovinAdSize, customEventExtras, context, customEventBannerListener );
             adView.setAdLoadListener( new AppLovinAdLoadListener()
@@ -172,7 +172,9 @@ public class AppLovinCustomEventBanner
 
     private AppLovinAdSize appLovinAdSizeFromAdMobAdSize(final AdSize adSize)
     {
-        if ( AdSize.BANNER.equals( adSize ) || AdSize.LARGE_BANNER.equals( adSize ) )
+        final boolean isSmartBanner = ( adSize.getWidth() == AdSize.FULL_WIDTH ) && ( adSize.getHeight() == AdSize.AUTO_HEIGHT );
+
+        if ( AdSize.BANNER.equals( adSize ) || AdSize.LARGE_BANNER.equals( adSize ) || isSmartBanner )
         {
             return AppLovinAdSize.BANNER;
         }

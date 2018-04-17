@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
@@ -12,6 +13,7 @@ import com.applovin.nativeAds.AppLovinNativeAdLoadListener;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinPostbackListener;
 import com.applovin.sdk.AppLovinSdk;
+import com.applovin.sdk.AppLovinSdkSettings;
 import com.mopub.nativeads.CustomEventNative;
 import com.mopub.nativeads.NativeErrorCode;
 import com.mopub.nativeads.NativeImageHelper;
@@ -38,8 +40,9 @@ public class AppLovinCustomEventNative
         implements AppLovinNativeAdLoadListener
 {
     private static final boolean LOGGING_ENABLED = true;
-    private static final Handler uiHandler       = new Handler( Looper.getMainLooper() );
+    private static final Handler UI_HANDLER      = new Handler( Looper.getMainLooper() );
 
+    private AppLovinSdk               sdk;
     private CustomEventNativeListener nativeListener;
     private Context                   context;
 
@@ -55,8 +58,9 @@ public class AppLovinCustomEventNative
         this.context = context;
         this.nativeListener = customEventNativeListener;
 
-        final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-        sdk.setPluginVersion( "MoPub-2.1.0" );
+        sdk = retrieveSdk( serverExtras, context );
+        sdk.setPluginVersion( "MoPub-2.1.4" );
+
         sdk.getNativeAdService().loadNativeAds( 1, this );
     }
 
@@ -233,7 +237,7 @@ public class AppLovinCustomEventNative
     /**
      * Performs the given runnable on the main thread.
      */
-    public static void runOnUiThread(final Runnable runnable)
+    private static void runOnUiThread(final Runnable runnable)
     {
         if ( Looper.myLooper() == Looper.getMainLooper() )
         {
@@ -241,7 +245,27 @@ public class AppLovinCustomEventNative
         }
         else
         {
-            uiHandler.post( runnable );
+            UI_HANDLER.post( runnable );
         }
+    }
+
+    /**
+     * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
+     */
+    private static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
+    {
+        final String sdkKey = serverExtras != null ? serverExtras.get( "sdk_key" ) : null;
+        final AppLovinSdk sdk;
+
+        if ( !TextUtils.isEmpty( sdkKey ) )
+        {
+            sdk = AppLovinSdk.getInstance( sdkKey, new AppLovinSdkSettings(), context );
+        }
+        else
+        {
+            sdk = AppLovinSdk.getInstance( context );
+        }
+
+        return sdk;
     }
 }

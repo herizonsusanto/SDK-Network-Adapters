@@ -81,7 +81,7 @@ public class AppLovinCustomEventInterstitial
         this.context = context;
 
         final AppLovinSdk sdk = AppLovinSdk.getInstance( context );
-        sdk.setPluginVersion( "AdMob-2.0" );
+        sdk.setPluginVersion( "AdMob-2.2.0" );
 
         // Zones support is available on AppLovin SDK 7.5.0 and higher
         if ( AppLovinSdk.VERSION_CODE >= 750 && customEventExtras != null && customEventExtras.containsKey( "zone_id" ) )
@@ -189,8 +189,6 @@ public class AppLovinCustomEventInterstitial
                 listener.onAdFailedToLoad( toAdMobErrorCode( errorCode ) );
             }
         } );
-
-        // TODO: Add support for backfilling on regular ad request if invalid zone entered
     }
 
     //

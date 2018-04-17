@@ -18,7 +18,7 @@
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
+#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define EMPTY_ZONE @""
 
 /**
@@ -30,6 +30,7 @@
 @end
 
 @interface AppLovinBannerCustomEvent()
+@property (nonatomic, strong) ALSdk *sdk;
 @property (nonatomic, strong) ALAdView *adView;
 @end
 
@@ -40,6 +41,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 static const CGFloat kALBannerHeightOffsetTolerance = 10.0f;
 static const CGFloat kALBannerStandardHeight = 50.0f;
+static const CGFloat kALLeaderHeightOffsetTolerance = 16.0f;
+static const CGFloat kALLeaderStandardHeight = 90.0f;
 
 // A dictionary of Zone -> AdView to be shared by instances of the custom event.
 static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
@@ -61,11 +64,12 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
     if ( adSize )
     {
-        [[ALSdk shared] setPluginVersion: @"MoPub-2.1.0"];
+        self.sdk = [self SDKFromCustomEventInfo: info];
+        [self.sdk setPluginVersion: @"MoPub-2.1.4"];
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier = info[@"zone_id"];
-        if ( HAS_ZONES_SUPPORT && zoneIdentifier.length > 0 )
+        if ( HAS_ZONES_SUPPORT(self.sdk) && zoneIdentifier.length > 0 )
         {
             self.adView = ALGlobalAdViews[zoneIdentifier];
             if ( !self.adView )
@@ -81,7 +85,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
             {
                 self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
                                                          size: adSize
-                                                          sdk: [ALSdk shared]];
+                                                          sdk: self.sdk];
                 ALGlobalAdViews[EMPTY_ZONE] = self.adView;
             }
         }
@@ -102,7 +106,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     {
         [self log: @"Failed to create an AppLovin banner with invalid size"];
         
-        NSString *failureReason = [NSString stringWithFormat: @"Adaptor requested to display a banner with invalid size: %@.", NSStringFromCGSize(size)];
+        NSString *failureReason = [NSString stringWithFormat: @"Adapter requested to display a banner with invalid size: %@.", NSStringFromCGSize(size)];
         NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
                                              code: kALErrorCodeUnableToRenderAd
                                          userInfo: @{NSLocalizedFailureReasonErrorKey : failureReason}];
@@ -123,17 +127,15 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
  */
 - (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
 {
-    // Prematurely create instance of ALAdView to store initialized one in later
-    ALAdView *adView = [ALAdView alloc];
+    ALAdView *adView = [[ALAdView alloc] initWithSdk: self.sdk size: adSize];
     
-    // We must use NSInvocation over performSelector: for initializers
-    NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
-    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
-    [inv setSelector: @selector(initWithSize:zoneIdentifier:)];
-    [inv setArgument: &adSize atIndex: 2];
-    [inv setArgument: &zoneIdentifier atIndex: 3];
-    [inv setReturnValue: &adView];
-    [inv invokeWithTarget: adView];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+    if ( [adView respondsToSelector: @selector(setZoneIdentifier:)] )
+    {
+        [adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+    }
+#pragma clang diagnostic pop
     
     return adView;
 }
@@ -156,10 +158,17 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     else
     {
         // Assume fluid width, and check for height with offset tolerance
-        CGFloat offset = ABS(kALBannerStandardHeight - size.height);
-        if ( offset <= kALBannerHeightOffsetTolerance )
+        
+        CGFloat bannerOffset = ABS(kALBannerStandardHeight - size.height);
+        CGFloat leaderOffset = ABS(kALLeaderStandardHeight - size.height);
+        
+        if ( bannerOffset <= kALBannerHeightOffsetTolerance )
         {
             return [ALAdSize sizeBanner];
+        }
+        else if ( leaderOffset <= kALLeaderHeightOffsetTolerance )
+        {
+            return [ALAdSize sizeLeader];
         }
     }
     
@@ -199,6 +208,19 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     }
 }
 
+- (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
+{
+    NSString *SDKKey = info[@"sdk_key"];
+    if ( SDKKey.length > 0 )
+    {
+        return [ALSdk sharedWithKey: SDKKey];
+    }
+    else
+    {
+        return [ALSdk shared];
+    }
+}
+
 @end
 
 @implementation AppLovinMoPubBannerDelegate
@@ -220,19 +242,25 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
     [self.parentCustomEvent log: @"Banner did load ad: %@", ad.adIdNumber];
-    [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didLoadAd: self.parentCustomEvent.adView];
+    
+    // Ensure logic is ran on main queue
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent
+                                                 didLoadAd: self.parentCustomEvent.adView];
+    });
 }
 
 - (void)adService:(ALAdService *)adService didFailToLoadAdWithError:(int)code
 {
-    [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
-    
-    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
-                                         code: [self.parentCustomEvent toMoPubErrorCode: code]
-                                     userInfo: nil];
-    [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didFailToLoadAdWithError: error];
-    
-    // TODO: Add support for backfilling on regular ad request if invalid zone entered
+    // Ensure logic is ran on main queue
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.parentCustomEvent log: @"Banner failed to load with error: %d", code];
+        
+        NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                             code: [self.parentCustomEvent toMoPubErrorCode: code]
+                                         userInfo: nil];
+        [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didFailToLoadAdWithError: error];
+    });
 }
 
 #pragma mark - Ad Display Delegate
