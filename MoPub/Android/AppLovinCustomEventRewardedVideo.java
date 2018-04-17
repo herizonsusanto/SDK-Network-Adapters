@@ -51,7 +51,7 @@ public class AppLovinCustomEventRewardedVideo
     // on every ad load regardless if ad was actually displayed or not.
     private static final Map<String, AppLovinIncentivizedInterstitial> GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS = new HashMap<String, AppLovinIncentivizedInterstitial>();
 
-    private static boolean initialized;
+    private boolean initialized;
 
     private AppLovinSdk                      sdk;
     private AppLovinIncentivizedInterstitial incentivizedInterstitial;
