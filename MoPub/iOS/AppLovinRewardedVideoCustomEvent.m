@@ -18,8 +18,6 @@
     #import "ALPrivacySettings.h"
 #endif
 
-// Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 // This class implementation with the old classname is left here for backwards compatibility purposes.
@@ -70,7 +68,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     NSString *zoneIdentifier;
-    if ( HAS_ZONES_SUPPORT(self.sdk) && info[@"zone_id"] )
+    if ( info[@"zone_id"] )
     {
         zoneIdentifier = info[@"zone_id"];
     }
@@ -94,7 +92,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         // Otherwise, use the Zones API
         else
         {
-            self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
+            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithZoneIdentifier: zoneIdentifier sdk: self.sdk];            
         }
         
         ALGlobalIncentivizedInterstitialAds[zoneIdentifier] = self.incent;
@@ -239,26 +237,6 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     [self log: @"Rewarded %@ %@", amount, currency];
     
     self.reward = [[MPRewardedVideoReward alloc] initWithCurrencyType: currency amount: amount];
-}
-
-#pragma mark - Incentivized Interstitial
-
-/**
- * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
- */
-- (ALIncentivizedInterstitialAd *)incentivizedInterstitialAdWithZoneIdentifier:(NSString *)zoneIdentifier
-{
-    ALIncentivizedInterstitialAd *incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
-    
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-    if ( [incent respondsToSelector: @selector(setZoneIdentifier:)] )
-    {
-        [incent performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
-    }
-#pragma clang diagnostic pop
-    
-    return incent;
 }
 
 #pragma mark - Utility Methods

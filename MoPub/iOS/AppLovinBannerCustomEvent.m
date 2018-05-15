@@ -18,8 +18,6 @@
     #import "ALPrivacySettings.h"
 #endif
 
-// Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define EMPTY_ZONE @""
 
 /**
@@ -74,12 +72,17 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier = info[@"zone_id"];
-        if ( HAS_ZONES_SUPPORT(self.sdk) && zoneIdentifier.length > 0 )
+        if ( zoneIdentifier.length > 0 )
         {
             self.adView = ALGlobalAdViews[zoneIdentifier];
             if ( !self.adView )
             {
-                self.adView = [self adViewWithAdSize: adSize zoneIdentifier: zoneIdentifier];
+                self.adView = [[ALAdView alloc] initWithSdk: self.sdk size: adSize];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+                [self.adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+#pragma clang diagnostic pop
+                
                 ALGlobalAdViews[zoneIdentifier] = self.adView;
             }
         }
@@ -98,12 +101,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         AppLovinMoPubBannerDelegate *delegate = [[AppLovinMoPubBannerDelegate alloc] initWithCustomEvent: self];
         self.adView.adLoadDelegate = delegate;
         self.adView.adDisplayDelegate = delegate;
-        
-        // As of iOS SDK >= 4.3.0, we added a delegate for banner events
-        if ( [self.adView respondsToSelector: @selector(setAdEventDelegate:)] )
-        {
-            self.adView.adEventDelegate = delegate;
-        }
+        self.adView.adEventDelegate = delegate;
         
         [self.adView loadNextAd];
     }
@@ -126,24 +124,6 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 }
 
 #pragma mark - Utility Methods
-
-/**
- * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
- */
-- (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
-{
-    ALAdView *adView = [[ALAdView alloc] initWithSdk: self.sdk size: adSize];
-    
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-    if ( [adView respondsToSelector: @selector(setZoneIdentifier:)] )
-    {
-        [adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
-    }
-#pragma clang diagnostic pop
-    
-    return adView;
-}
 
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(CGSize)size
 {
