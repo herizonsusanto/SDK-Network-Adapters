@@ -15,8 +15,11 @@ import com.applovin.sdk.AppLovinAdDisplayListener;
 import com.applovin.sdk.AppLovinAdLoadListener;
 import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
+import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
+import com.mopub.common.MoPub;
+import com.mopub.common.privacy.PersonalInfoManager;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
@@ -70,6 +73,14 @@ public class AppLovinCustomEventBanner
         }
 
         log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
+
+        // Pass the user consent from the MoPub SDK as per GDPR
+        PersonalInfoManager personalInfoManager = MoPub.getPersonalInformationManager();
+        if ( personalInfoManager != null && personalInfoManager.gdprApplies() )
+        {
+            boolean canCollectPersonalInfo = personalInfoManager.canCollectPersonalInformation();
+            AppLovinPrivacySettings.setHasUserConsent( canCollectPersonalInfo, context );
+        }
 
         final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )

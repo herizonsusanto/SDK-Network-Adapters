@@ -9,11 +9,13 @@
 #import "AppLovinRewardedVideoCustomEvent.h"
 #import "MPRewardedVideoReward.h"
 #import "MPError.h"
+#import "MoPub.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
     #import "ALIncentivizedInterstitialAd.h"
+    #import "ALPrivacySettings.h"
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
@@ -58,6 +60,10 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 - (void)requestRewardedVideoWithCustomEventInfo:(NSDictionary *)info
 {
     [self log: @"Requesting AppLovin rewarded video with info: %@", info];
+    
+    // Collect and pass the user's consent from MoPub into the AppLovin SDK
+    BOOL canCollectPersonalInfo = [[MoPub sharedInstance] canCollectPersonalInfo];
+    [ALPrivacySettings setHasUserConsent: canCollectPersonalInfo];
     
     self.sdk = [self SDKFromCustomEventInfo: info];
     [self.sdk setPluginVersion: @"MoPub-2.1.4"];

@@ -12,8 +12,11 @@ import com.applovin.nativeAds.AppLovinNativeAd;
 import com.applovin.nativeAds.AppLovinNativeAdLoadListener;
 import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinPostbackListener;
+import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
+import com.mopub.common.MoPub;
+import com.mopub.common.privacy.PersonalInfoManager;
 import com.mopub.nativeads.CustomEventNative;
 import com.mopub.nativeads.NativeErrorCode;
 import com.mopub.nativeads.NativeImageHelper;
@@ -54,6 +57,14 @@ public class AppLovinCustomEventNative
     public void loadNativeAd(final Context context, final CustomEventNativeListener customEventNativeListener, final Map<String, Object> localExtras, final Map<String, String> serverExtras)
     {
         log( DEBUG, "Requesting AppLovin native ad with server extras: " + serverExtras );
+
+        // Pass the user consent from the MoPub SDK as per GDPR
+        PersonalInfoManager personalInfoManager = MoPub.getPersonalInformationManager();
+        if ( personalInfoManager != null && personalInfoManager.gdprApplies() )
+        {
+            boolean canCollectPersonalInfo = personalInfoManager.canCollectPersonalInformation();
+            AppLovinPrivacySettings.setHasUserConsent( canCollectPersonalInfo, context );
+        }
 
         this.context = context;
         this.nativeListener = customEventNativeListener;

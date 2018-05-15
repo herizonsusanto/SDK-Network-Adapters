@@ -6,15 +6,16 @@
 //
 //
 
-
 #import "AppLovinBannerCustomEvent.h"
 #import "MPConstants.h"
 #import "MPError.h"
+#import "MoPub.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
     #import "ALAdView.h"
+    #import "ALPrivacySettings.h"
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
@@ -50,7 +51,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 + (void)initialize
 {
     [super initialize];
-
+    
     ALGlobalAdViews = [NSMutableDictionary dictionary];
 }
 
@@ -59,6 +60,10 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 - (void)requestAdWithSize:(CGSize)size customEventInfo:(NSDictionary *)info
 {
     [self log: @"Requesting AppLovin banner of size %@ with info: %@", NSStringFromCGSize(size), info];
+    
+    // Collect and pass the user's consent from MoPub into the AppLovin SDK
+    BOOL canCollectPersonalInfo = [[MoPub sharedInstance] canCollectPersonalInfo];
+    [ALPrivacySettings setHasUserConsent: canCollectPersonalInfo];
     
     // Convert requested size to AppLovin Ad Size
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
