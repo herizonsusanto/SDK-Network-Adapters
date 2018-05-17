@@ -17,7 +17,6 @@
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 @interface GADMAdapterAppLovinRewardBasedVideoAd() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate, ALAdRewardDelegate>
@@ -90,7 +89,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     AppLovinAdNetworkExtras *extras = (AppLovinAdNetworkExtras *)self.connector.networkExtras;
-    NSString *zoneIdentifier = (extras.zoneIdentifier && HAS_ZONES_SUPPORT) ? extras.zoneIdentifier : DEFAULT_ZONE;
+    NSString *zoneIdentifier = extras.zoneIdentifier ?: DEFAULT_ZONE;
     
     // Check if incentivized ad for zone already exists
     if ( ALGlobalIncentivizedInterstitialAds[zoneIdentifier] )
@@ -107,7 +106,8 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         // Otherwise, use the Zones API
         else
         {
-            self.incent = [self incentivizedInterstitialAdWithZoneIdentifier: zoneIdentifier];
+            // No need to instantiate ALAdView with SDK instance, AdMob adapters uses the shared instance
+            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithZoneIdentifier: zoneIdentifier];
         }
         
         ALGlobalIncentivizedInterstitialAds[zoneIdentifier] = self.incent;
@@ -238,27 +238,6 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     [self log: @"Rewarded %@ %@", amount, currency];
     
     self.reward = [[GADAdReward alloc] initWithRewardType: currency rewardAmount: amount];
-}
-
-#pragma mark - Incentivized Interstitial
-
-/**
- * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
- */
-- (ALIncentivizedInterstitialAd *)incentivizedInterstitialAdWithZoneIdentifier:(NSString *)zoneIdentifier
-{
-    // Prematurely create instance of ALAdView to store initialized one in later
-    ALIncentivizedInterstitialAd *incent = [ALIncentivizedInterstitialAd alloc];
-    
-    // We must use NSInvocation over performSelector: for initializers
-    NSMethodSignature *methodSignature = [ALIncentivizedInterstitialAd instanceMethodSignatureForSelector: @selector(initWithZoneIdentifier:)];
-    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
-    [inv setSelector: @selector(initWithZoneIdentifier:)];
-    [inv setArgument: &zoneIdentifier atIndex: 2];
-    [inv setReturnValue: &incent];
-    [inv invokeWithTarget: incent];
-    
-    return incent;
 }
 
 #pragma mark - Utility Methods

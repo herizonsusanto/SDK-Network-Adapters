@@ -15,8 +15,6 @@
     #import "ALInterstitialAd.h"
 #endif
 
-// Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 // This class implementation with the old classname is left here for backwards compatibility purposes.
@@ -59,7 +57,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     [[ALSdk shared] setPluginVersion: @"AdMob-2.3.1"];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    if ( HAS_ZONES_SUPPORT && request.additionalParameters[@"zone_id"] )
+    if ( request.additionalParameters[@"zone_id"] )
     {
         self.zoneIdentifier = request.additionalParameters[@"zone_id"];
     }
@@ -87,9 +85,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
         else
         {
             // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-            [[ALSdk shared].adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
-                                           withObject: self.zoneIdentifier
-                                           withObject: self];
+            [[ALSdk shared].adService loadNextAdForZoneIdentifier: self.zoneIdentifier andNotify: self];
         }
     }
 }
