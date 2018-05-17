@@ -60,8 +60,11 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     [self log: @"Requesting AppLovin banner of size %@ with info: %@", NSStringFromCGSize(size), info];
     
     // Collect and pass the user's consent from MoPub into the AppLovin SDK
-    BOOL canCollectPersonalInfo = [[MoPub sharedInstance] canCollectPersonalInfo];
-    [ALPrivacySettings setHasUserConsent: canCollectPersonalInfo];
+    if ( [[MoPub sharedInstance] isGDPRApplicable] == MPBoolYes )
+    {
+        BOOL canCollectPersonalInfo = [[MoPub sharedInstance] canCollectPersonalInfo];
+        [ALPrivacySettings setHasUserConsent: canCollectPersonalInfo];
+    }
     
     // Convert requested size to AppLovin Ad Size
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
