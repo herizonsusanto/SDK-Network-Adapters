@@ -71,7 +71,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     if ( adSize )
     {
         self.sdk = [self SDKFromCustomEventInfo: info];
-        [self.sdk setPluginVersion: @"MoPub-2.1.4"];
+        [self.sdk setPluginVersion: @"MoPub-3.0.0"];
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier = info[@"zone_id"];
