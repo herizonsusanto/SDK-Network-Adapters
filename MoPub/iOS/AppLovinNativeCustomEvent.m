@@ -12,11 +12,13 @@
 #import "MPNativeAdAdapter.h"
 #import "MPNativeAdConstants.h"
 #import "MPError.h"
+#import "MoPub.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
     #import "ALSdk.h"
+    #import "ALPrivacySettings.h"
 #endif
 
 @interface AppLovinNativeAdapter : NSObject <MPNativeAdAdapter, ALPostbackDelegate>
@@ -46,8 +48,15 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     [[self class] log: @"Requesting AppLovin native ad with info: %@", info];
     
+    // Collect and pass the user's consent from MoPub into the AppLovin SDK
+    if ( [[MoPub sharedInstance] isGDPRApplicable] == MPBoolYes )
+    {
+        BOOL canCollectPersonalInfo = [[MoPub sharedInstance] canCollectPersonalInfo];
+        [ALPrivacySettings setHasUserConsent: canCollectPersonalInfo];
+    }
+    
     self.sdk = [self SDKFromCustomEventInfo: info];
-    [self.sdk setPluginVersion: @"MoPub-2.1.4"];
+    [self.sdk setPluginVersion: @"MoPub-3.0.0"];
     
     [self.sdk.nativeAdService loadNativeAdGroupOfCount: 1 andNotify: self];
 }

@@ -15,15 +15,17 @@ import com.applovin.sdk.AppLovinAdLoadListener;
 import com.applovin.sdk.AppLovinAdRewardListener;
 import com.applovin.sdk.AppLovinAdVideoPlaybackListener;
 import com.applovin.sdk.AppLovinErrorCodes;
+import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
 import com.mopub.common.LifecycleListener;
+import com.mopub.common.MoPub;
 import com.mopub.common.MoPubReward;
+import com.mopub.common.privacy.PersonalInfoManager;
 import com.mopub.mobileads.CustomEventRewardedVideo;
 import com.mopub.mobileads.MoPubErrorCode;
 import com.mopub.mobileads.MoPubRewardedVideoManager;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,7 +75,7 @@ public class AppLovinCustomEventRewardedVideo
         if ( !initialized )
         {
             sdk = retrieveSdk( serverExtras, activity );
-            sdk.setPluginVersion( "MoPub-2.1.5" );
+            sdk.setPluginVersion( "MoPub-3.0.0" );
 
             initialized = true;
 
@@ -87,6 +89,14 @@ public class AppLovinCustomEventRewardedVideo
     protected void loadWithSdkInitialized(@NonNull final Activity activity, @NonNull final Map<String, Object> localExtras, @NonNull final Map<String, String> serverExtras) throws Exception
     {
         log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
+
+        // Pass the user consent from the MoPub SDK as per GDPR
+        PersonalInfoManager personalInfoManager = MoPub.getPersonalInformationManager();
+        if ( personalInfoManager != null && personalInfoManager.gdprApplies() )
+        {
+            boolean canCollectPersonalInfo = personalInfoManager.canCollectPersonalInformation();
+            AppLovinPrivacySettings.setHasUserConsent( canCollectPersonalInfo, activity.getApplicationContext() );
+        }
 
         parentActivity = activity;
 
@@ -117,7 +127,7 @@ public class AppLovinCustomEventRewardedVideo
             // Otherwise, use the Zones API
             else
             {
-                incentivizedInterstitial = createIncentivizedInterstitialForZoneId( zoneId, sdk );
+                incentivizedInterstitial = AppLovinIncentivizedInterstitial.create( zoneId, sdk );
             }
 
             GLOBAL_INCENTIVIZED_INTERSTITIAL_ADS.put( zoneId, incentivizedInterstitial );
@@ -300,27 +310,6 @@ public class AppLovinCustomEventRewardedVideo
         log( DEBUG, "Verified " + amount + " " + currency );
 
         reward = MoPubReward.success( currency, amount );
-    }
-
-    //
-    // Dynamically create an instance of AppLovinIncentivizedInterstitial with a given zone without breaking backwards compatibility for publishers on older SDKs.
-    //
-    private AppLovinIncentivizedInterstitial createIncentivizedInterstitialForZoneId(final String zoneId, final AppLovinSdk sdk)
-    {
-        AppLovinIncentivizedInterstitial incent = null;
-
-        try
-        {
-            final Method method = AppLovinIncentivizedInterstitial.class.getMethod( "create", String.class, AppLovinSdk.class );
-            incent = (AppLovinIncentivizedInterstitial) method.invoke( null, zoneId, sdk );
-        }
-        catch ( Throwable th )
-        {
-            log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
-            MoPubRewardedVideoManager.onRewardedVideoLoadFailure( getClass(), "", MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
-        }
-
-        return incent;
     }
 
     //

@@ -15,7 +15,6 @@
 #endif
 
 // Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT [[ALSdk shared].adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 #define IS_IPHONE ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
@@ -62,13 +61,13 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     ALAdSize *appLovinAdSize = [self appLovinAdSizeFromRequestedSize: adSize];
     if ( appLovinAdSize )
     {
-        [[ALSdk shared] setPluginVersion: @"AdMob-2.3.1"];
+        [[ALSdk shared] setPluginVersion: @"AdMob-2.3.2"];
         
         CGSize size = CGSizeFromGADAdSize(adSize);
         
         // Zones support is available on AppLovin SDK 4.5.0 and higher
         NSString *zoneIdentifier;
-        if ( HAS_ZONES_SUPPORT && request.additionalParameters[@"zone_id"] )
+        if ( request.additionalParameters[@"zone_id"] )
         {
             zoneIdentifier = request.additionalParameters[@"zone_id"];
         }
@@ -93,7 +92,8 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
             // Otherwise, use the Zones API
             else
             {
-                self.adView = [self adViewWithAdSize: appLovinAdSize zoneIdentifier: zoneIdentifier];
+                // No need to instantiate ALAdView with SDK instance, AdMob adapters uses the shared instance
+                self.adView = [[ALAdView alloc] initWithSize: appLovinAdSize zoneIdentifier: zoneIdentifier];
             }
             
             ALGlobalAdViews[zoneIdentifier] = self.adView;
@@ -117,26 +117,6 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 }
 
 #pragma mark - Utility Methods
-
-/**
- * Dynamically create an instance of ALAdView with a given zone without breaking backwards compatibility for publishers on older SDKs.
- */
-- (ALAdView *)adViewWithAdSize:(ALAdSize *)adSize zoneIdentifier:(NSString *)zoneIdentifier
-{
-    // Prematurely create instance of ALAdView to store initialized one in later
-    ALAdView *adView = [ALAdView alloc];
-    
-    // We must use NSInvocation over performSelector: for initializers
-    NSMethodSignature *methodSignature = [ALAdView instanceMethodSignatureForSelector: @selector(initWithSize:zoneIdentifier:)];
-    NSInvocation *inv = [NSInvocation invocationWithMethodSignature: methodSignature];
-    [inv setSelector: @selector(initWithSize:zoneIdentifier:)];
-    [inv setArgument: &adSize atIndex: 2];
-    [inv setArgument: &zoneIdentifier atIndex: 3];
-    [inv setReturnValue: &adView];
-    [inv invokeWithTarget: adView];
-    
-    return adView;
-}
 
 - (ALAdSize *)appLovinAdSizeFromRequestedSize:(GADAdSize)size
 {

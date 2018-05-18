@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.applovin.adview.AppLovinAdView;
+import com.applovin.adview.AppLovinAdViewDisplayErrorCode;
 import com.applovin.adview.AppLovinAdViewEventListener;
 import com.applovin.sdk.AppLovinAd;
 import com.applovin.sdk.AppLovinAdClickListener;
@@ -15,14 +16,14 @@ import com.applovin.sdk.AppLovinAdDisplayListener;
 import com.applovin.sdk.AppLovinAdLoadListener;
 import com.applovin.sdk.AppLovinAdSize;
 import com.applovin.sdk.AppLovinErrorCodes;
+import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
+import com.mopub.common.MoPub;
+import com.mopub.common.privacy.PersonalInfoManager;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Map;
 
 import static android.util.Log.DEBUG;
@@ -71,11 +72,19 @@ public class AppLovinCustomEventBanner
 
         log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
 
+        // Pass the user consent from the MoPub SDK as per GDPR
+        PersonalInfoManager personalInfoManager = MoPub.getPersonalInformationManager();
+        if ( personalInfoManager != null && personalInfoManager.gdprApplies() )
+        {
+            boolean canCollectPersonalInfo = personalInfoManager.canCollectPersonalInformation();
+            AppLovinPrivacySettings.setHasUserConsent( canCollectPersonalInfo, context );
+        }
+
         final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )
         {
             sdk = retrieveSdk( serverExtras, context );
-            sdk.setPluginVersion( "MoPub-2.1.5" );
+            sdk.setPluginVersion( "MoPub-3.0.0" );
 
             final AppLovinAdView adView = new AppLovinAdView( sdk, adSize, context );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
@@ -104,11 +113,31 @@ public class AppLovinCustomEventBanner
                 }
             } );
 
-            // As of Android SDK >= 7.3.0, we added a listener for banner events
-            if ( AppLovinSdk.VERSION_CODE >= 730 )
+            adView.setAdViewEventListener( new AppLovinAdViewEventListener()
             {
-                adView.setAdViewEventListener( (AppLovinAdViewEventListener) AppLovinAdViewEventListenerProxy.newInstance( customEventBannerListener ) );
-            }
+                @Override
+                public void adOpenedFullscreen(final AppLovinAd appLovinAd, final AppLovinAdView appLovinAdView)
+                {
+                    log( DEBUG, "Banner opened fullscreen" );
+                    customEventBannerListener.onBannerExpanded();
+                }
+
+                @Override
+                public void adClosedFullscreen(final AppLovinAd appLovinAd, final AppLovinAdView appLovinAdView)
+                {
+                    log( DEBUG, "Banner closed fullscreen" );
+                    customEventBannerListener.onBannerCollapsed();
+                }
+
+                @Override
+                public void adLeftApplication(final AppLovinAd appLovinAd, final AppLovinAdView appLovinAdView)
+                {
+                    log( DEBUG, "Banner left application" );
+                }
+
+                @Override
+                public void adFailedToDisplay(final AppLovinAd appLovinAd, final AppLovinAdView appLovinAdView, final AppLovinAdViewDisplayErrorCode appLovinAdViewDisplayErrorCode) {}
+            } );
 
             final AppLovinAdLoadListener adLoadListener = new AppLovinAdLoadListener()
             {
@@ -174,7 +203,7 @@ public class AppLovinCustomEventBanner
 
             if ( !TextUtils.isEmpty( zoneId ) )
             {
-                loadNextAd( zoneId, adLoadListener, customEventBannerListener );
+                sdk.getAdService().loadNextAdForZoneId( zoneId, adLoadListener );
             }
             else
             {
@@ -291,51 +320,6 @@ public class AppLovinCustomEventBanner
     }
 
     /**
-     * Dynamic proxy class for AppLovin's AppLovinAdViewEventListener. Used to keep compilation compatibility if publisher is on a version of the SDK before the listener was introduced (< 7.3.0).
-     */
-    private static final class AppLovinAdViewEventListenerProxy
-            implements InvocationHandler
-    {
-        private final CustomEventBannerListener customEventBannerListener;
-
-        private static Object newInstance(final CustomEventBannerListener customEventBannerListener)
-        {
-            return Proxy.newProxyInstance( AppLovinAdViewEventListener.class.getClassLoader(),
-                                           new Class[] { AppLovinAdViewEventListener.class },
-                                           new AppLovinAdViewEventListenerProxy( customEventBannerListener ) );
-        }
-
-        private AppLovinAdViewEventListenerProxy(final CustomEventBannerListener customEventBannerListener)
-        {
-            this.customEventBannerListener = customEventBannerListener;
-        }
-
-        public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
-        {
-            final String methodName = method.getName();
-
-            if ( "adOpenedFullscreen".equals( methodName ) )
-            {
-                log( DEBUG, "Banner opened fullscreen" );
-                customEventBannerListener.onBannerExpanded();
-            }
-            else if ( "adClosedFullscreen".equals( methodName ) )
-            {
-                log( DEBUG, "Banner closed fullscreen" );
-                customEventBannerListener.onBannerCollapsed();
-            }
-            else if ( "adLeftApplication".equals( methodName ) )
-            {
-                // We will fire onLeaveApplication() in the adClicked() callback
-                log( DEBUG, "Banner left application" );
-            }
-            else if ( "adFailedToDisplay".equals( methodName ) ) {}
-
-            return null;
-        }
-    }
-
-    /**
      * Retrieves the appropriate instance of AppLovin's SDK from the SDK key given in the server parameters, or Android Manifest.
      */
     private static AppLovinSdk retrieveSdk(final Map<String, String> serverExtras, final Context context)
@@ -353,21 +337,6 @@ public class AppLovinCustomEventBanner
         }
 
         return sdk;
-    }
-
-    private void loadNextAd(final String zoneId, final AppLovinAdLoadListener adLoadListener, final CustomEventBannerListener customEventBannerListener)
-    {
-        // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-        try
-        {
-            final Method method = sdk.getAdService().getClass().getMethod( "loadNextAdForZoneId", String.class, AppLovinAdLoadListener.class );
-            method.invoke( sdk.getAdService(), zoneId, adLoadListener );
-        }
-        catch ( Throwable th )
-        {
-            log( ERROR, "Unable to load ad for zone: " + zoneId + "..." );
-            customEventBannerListener.onBannerFailed( MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR );
-        }
     }
 
     /**

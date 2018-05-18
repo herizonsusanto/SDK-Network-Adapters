@@ -8,15 +8,15 @@
 
 #import "AppLovinInterstitialCustomEvent.h"
 #import "MPError.h"
+#import "MoPub.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
 #else
     #import "ALInterstitialAd.h"
+    #import "ALPrivacySettings.h"
 #endif
 
-// Convenience macro for checking if AppLovin SDK has support for zones
-#define HAS_ZONES_SUPPORT(_SDK) [_SDK.adService respondsToSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)]
 #define DEFAULT_ZONE @""
 
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
@@ -54,11 +54,18 @@ static NSObject *ALGlobalInterstitialAdsLock;
 {
     [self log: @"Requesting AppLovin interstitial with info: %@", info];
     
+    // Collect and pass the user's consent from MoPub into the AppLovin SDK
+    if ( [[MoPub sharedInstance] isGDPRApplicable] == MPBoolYes )
+    {
+        BOOL canCollectPersonalInfo = [[MoPub sharedInstance] canCollectPersonalInfo];
+        [ALPrivacySettings setHasUserConsent: canCollectPersonalInfo];
+    }
+    
     self.sdk = [self SDKFromCustomEventInfo: info];
-    [self.sdk setPluginVersion: @"MoPub-2.1.4"];
+    [self.sdk setPluginVersion: @"MoPub-3.0.0"];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
-    if ( HAS_ZONES_SUPPORT(self.sdk) && info[@"zone_id"] )
+    if ( info[@"zone_id"] )
     {
         self.zoneIdentifier = info[@"zone_id"];
     }
@@ -86,10 +93,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
         // Otherwise, use the Zones API
         else
         {
-            // Dynamically load an ad for a given zone without breaking backwards compatibility for publishers on older SDKs
-            [self.sdk.adService performSelector: @selector(loadNextAdForZoneIdentifier:andNotify:)
-                                     withObject: self.zoneIdentifier
-                                     withObject: self];
+            [self.sdk.adService loadNextAdForZoneIdentifier: self.zoneIdentifier andNotify: self];
         }
     }
 }

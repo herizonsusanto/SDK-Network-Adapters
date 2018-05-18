@@ -15,14 +15,13 @@
 #    6. The path to the MoPub interstitial SDK JAR.
 #    7. The path to the MoPub rewarded SDK JAR.
 #    8. The path to the MoPub native ads SDK JAR.
+#    9. The path to the MoPub volley SDK JAR.
 #
-#  Example Usage: ./build.sh {ANDROID_SDK_JAR} {ANDROID_ANNOTATIONS_JAR} {APPLOVIN_SDK_JAR} {MOPUB_BASE_SDK_JAR} {MOPUB_BANNER_SDK_JAR} {MOPUB_INTERSTITIAL_SDK_JAR} {MOPUB_REWARDED_SDK_JAR} {MOPUB_NATIVE_ADS_SDK_JAR}
+#  Example Usage: ./build.sh {ANDROID_SDK_JAR} {ANDROID_ANNOTATIONS_JAR} {APPLOVIN_SDK_JAR} {MOPUB_BASE_SDK_JAR} {MOPUB_BANNER_SDK_JAR} {MOPUB_INTERSTITIAL_SDK_JAR} {MOPUB_REWARDED_SDK_JAR} {MOPUB_NATIVE_ADS_SDK_JAR} {MOPUB_VOLLEY_SDK_JAR}
 #
-
-# TODO: Automatically rename packages
 
 # Input parameters check
-if [ "$#" -lt 8 ]; then
+if [ "$#" -lt 9 ]; then
     echo "Invalid number of parameters"
     exit 1
 fi
@@ -36,6 +35,7 @@ MOPUB_SDK_JAR_BANNER=$5
 MOPUB_SDK_JAR_INTER=$6
 MOPUB_SDK_JAR_REWARD=$7
 MOPUB_SDK_JAR_NATIVE=$8
+MOPUB_SDK_JAR_VOLLEY=$9
 
 # Setup build folder
 if [ ! -d "build" ]; then
@@ -49,7 +49,7 @@ LC_ALL=C sed -i '' 's/YOUR_PACKAGE_NAME/com.applovin.mediation.mopub/g' ../*.jav
 
 # Compile source files into build folder
 javac -classpath \
-    "${ANDROID_SDK_JAR}:${ANDROID_SUPPORT_ANNOTATIONS_JAR}:${APPLOVIN_SDK_JAR}:${MOPUB_SDK_JAR_BASE}:${MOPUB_SDK_JAR_BANNER}:${MOPUB_SDK_JAR_INTER}:${MOPUB_SDK_JAR_REWARD}:${MOPUB_SDK_JAR_NATIVE}" \
+"${ANDROID_SDK_JAR}:${ANDROID_SUPPORT_ANNOTATIONS_JAR}:${APPLOVIN_SDK_JAR}:${MOPUB_SDK_JAR_BASE}:${MOPUB_SDK_JAR_BANNER}:${MOPUB_SDK_JAR_INTER}:${MOPUB_SDK_JAR_REWARD}:${MOPUB_SDK_JAR_NATIVE}:${MOPUB_SDK_JAR_VOLLEY}" \
     -source 1.7 \
     -target 1.7 \
     -d build \
