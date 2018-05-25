@@ -7,12 +7,15 @@
 //
 
 #import "AppLovinNativeCustomEvent.h"
-#import "MPNativeAdError.h"
-#import "MPNativeAd.h"
-#import "MPNativeAdAdapter.h"
-#import "MPNativeAdConstants.h"
-#import "MPError.h"
-#import "MoPub.h"
+
+#if __has_include("MoPub.h")
+    #import "MPNativeAdError.h"
+    #import "MPNativeAd.h"
+    #import "MPNativeAdAdapter.h"
+    #import "MPNativeAdConstants.h"
+    #import "MPError.h"
+    #import "MoPub.h"
+#endif
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>

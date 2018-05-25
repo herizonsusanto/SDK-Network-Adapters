@@ -7,8 +7,12 @@
 //
 
 #import "AppLovinInterstitialCustomEvent.h"
-#import "MPError.h"
-#import "MoPub.h"
+
+#if __has_include("MoPub.h")
+    #import "MPError.h"
+    #import "MPLogging.h"
+    #import "MoPub.h"
+#endif
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
