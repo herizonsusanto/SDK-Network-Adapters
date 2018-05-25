@@ -37,7 +37,6 @@
 @property (nonatomic, assign) BOOL fullyWatched;
 @property (nonatomic, strong) MPRewardedVideoReward *reward;
 @property (nonatomic, assign, getter=isTokenEvent) BOOL tokenEvent;
-@property (nonatomic, strong) ALAd *tokenAd;
 
 @end
 
@@ -51,6 +50,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 // on every ad load regardless if ad was actually displayed or not.
 static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobalIncentivizedInterstitialAds;
 
+static NSMutableArray<ALAd *> *ALGlobalTokenAdsQueue;
+static NSObject *ALGlobalTokenAdsQueueLock;
+
 #pragma mark - Class Initialization
 
 + (void)initialize
@@ -58,6 +60,9 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     [super initialize];
     
     ALGlobalIncentivizedInterstitialAds = [NSMutableDictionary dictionary];
+    
+    ALGlobalTokenAdsQueue = [NSMutableArray array];
+    ALGlobalTokenAdsQueueLock = [[NSObject alloc] init];
 }
 
 #pragma mark - MPRewardedVideoCustomEvent Overridden Methods
@@ -82,7 +87,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     BOOL hasAdMarkup = adMarkup.length > 0;
     
-    [self log: @"Requesting AppLovin rewarded video with info: %@ and has ad markup: %@", info, hasAdMarkup];
+    [self log: @"Requesting AppLovin rewarded video with info: %@ and has ad markup: %d", info, hasAdMarkup];
     
     // Determine zone
     NSString *zoneIdentifier;
@@ -118,7 +123,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 {
     if ( [self isTokenEvent] )
     {
-        return self.tokenAd != nil;
+        return [[self class] hasTokenAd];
     }
     else
     {
@@ -135,8 +140,10 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         
         if ( [self isTokenEvent] )
         {
+            ALAd *tokenAd = [[self class] dequeueTokenAd];
+            
             [self.incent showOver: [UIApplication sharedApplication].keyWindow
-                         renderAd: self.tokenAd
+                         renderAd: tokenAd
                         andNotify: self];
         }
         else
@@ -165,7 +172,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 {
     if ( [self isTokenEvent] )
     {
-        self.tokenAd = ad;
+        [[self class] enqueueTokenAd: ad];
     }
     
     [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
@@ -349,6 +356,40 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     incent.adDisplayDelegate = customEvent;
     
     return incent;
+}
+
++ (BOOL)hasTokenAd
+{
+    @synchronized ( ALGlobalTokenAdsQueueLock )
+    {
+        return ALGlobalTokenAdsQueue.count > 0;
+    }
+}
+
++ (alnullable ALAd *)dequeueTokenAd
+{
+    @synchronized ( ALGlobalTokenAdsQueueLock )
+    {
+        if ( ALGlobalTokenAdsQueue.count > 0 )
+        {
+            ALAd *preloadedAd = [ALGlobalTokenAdsQueue firstObject];
+            [ALGlobalTokenAdsQueue removeObjectAtIndex: 0];
+            
+            return preloadedAd;
+        }
+        else
+        {
+            return nil;
+        }
+    }
+}
+
++ (void)enqueueTokenAd:(ALAd *)ad
+{
+    @synchronized ( ALGlobalTokenAdsQueueLock )
+    {
+        [ALGlobalTokenAdsQueue addObject: ad];
+    }
 }
 
 @end
