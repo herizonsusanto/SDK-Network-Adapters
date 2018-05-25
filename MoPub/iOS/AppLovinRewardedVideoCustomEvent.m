@@ -36,6 +36,8 @@
 
 @property (nonatomic, assign) BOOL fullyWatched;
 @property (nonatomic, strong) MPRewardedVideoReward *reward;
+@property (nonatomic, assign, getter=isTokenEvent) BOOL tokenEvent;
+@property (nonatomic, strong) ALAd *tokenAd;
 
 @end
 
@@ -98,7 +100,9 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     // Use token API
     if ( adMarkup.length > 0 )
-    {        
+    {
+        self.tokenEvent = YES;
+        
         [self.sdk.adService loadNextAdForAdToken: adMarkup andNotify: self];
     }
     // Zone/regular ad load
@@ -110,7 +114,14 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 
 - (BOOL)hasAdAvailable
 {
-    return self.incent.readyForDisplay;
+    if ( [self isTokenEvent] )
+    {
+        return self.tokenAd != nil;
+    }
+    else
+    {
+        return self.incent.readyForDisplay;
+    }
 }
 
 - (void)presentRewardedVideoFromViewController:(UIViewController *)viewController
@@ -120,7 +131,16 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         self.reward = nil;
         self.fullyWatched = NO;
         
-        [self.incent showAndNotify: self];
+        if ( [self isTokenEvent] )
+        {
+            [self.incent showOver: [UIApplication sharedApplication].keyWindow
+                         renderAd: self.tokenAd
+                        andNotify: self];
+        }
+        else
+        {
+            [self.incent showAndNotify: self];
+        }
     }
     else
     {
@@ -141,6 +161,11 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
+    if ( [self isTokenEvent] )
+    {
+        self.tokenAd = ad;
+    }
+    
     [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
     
     dispatch_async(dispatch_get_main_queue(), ^{
