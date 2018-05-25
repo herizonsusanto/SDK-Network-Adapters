@@ -22,6 +22,7 @@
 #endif
 
 #define DEFAULT_ZONE @""
+#define DEFAULT_TOKEN_ZONE @"token"
 
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
@@ -56,8 +57,11 @@ static NSObject *ALGlobalInterstitialAdsLock;
 
 - (void)requestInterstitialWithCustomEventInfo:(NSDictionary *)info
 {
-    [self log: @"Requesting AppLovin interstitial with info: %@", info];
-    
+    [self requestInterstitialWithCustomEventInfo: info adMarkup: nil];
+}
+
+- (void)requestInterstitialWithCustomEventInfo:(NSDictionary *)info adMarkup:(NSString *)adMarkup
+{
     // Collect and pass the user's consent from MoPub into the AppLovin SDK
     if ( [[MoPub sharedInstance] isGDPRApplicable] == MPBoolYes )
     {
@@ -68,36 +72,49 @@ static NSObject *ALGlobalInterstitialAdsLock;
     self.sdk = [self SDKFromCustomEventInfo: info];
     [self.sdk setPluginVersion: @"MoPub-3.0.0"];
     
-    // Zones support is available on AppLovin SDK 4.5.0 and higher
-    if ( info[@"zone_id"] )
+    
+    [self log: @"Requesting AppLovin interstitial with info: %@ and ad markup: %@", info, adMarkup];
+    
+    if ( adMarkup.length > 0 )
     {
-        self.zoneIdentifier = info[@"zone_id"];
+        self.zoneIdentifier = DEFAULT_TOKEN_ZONE;
+        
+        // Use token API
+        [self.sdk.adService loadNextAdForAdToken: adMarkup andNotify: self];
     }
     else
     {
-        self.zoneIdentifier = DEFAULT_ZONE;
-    }
-    
-    
-    // Check if we already have a preloaded ad for the given zone
-    ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
-    if ( preloadedAd )
-    {
-        [self log: @"Found preloaded ad for zone: {%@}", self.zoneIdentifier];
-        [self adService: self.sdk.adService didLoadAd: preloadedAd];
-    }
-    // No ad currently preloaded
-    else
-    {
-        // If this is a default Zone, create the incentivized ad normally
-        if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
+        // Zones support is available on AppLovin SDK 4.5.0 and higher
+        if ( info[@"zone_id"] )
         {
-            [self.sdk.adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+            self.zoneIdentifier = info[@"zone_id"];
         }
-        // Otherwise, use the Zones API
         else
         {
-            [self.sdk.adService loadNextAdForZoneIdentifier: self.zoneIdentifier andNotify: self];
+            self.zoneIdentifier = DEFAULT_ZONE;
+        }
+        
+        
+        // Check if we already have a preloaded ad for the given zone
+        ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
+        if ( preloadedAd )
+        {
+            [self log: @"Found preloaded ad for zone: {%@}", self.zoneIdentifier];
+            [self adService: self.sdk.adService didLoadAd: preloadedAd];
+        }
+        // No ad currently preloaded
+        else
+        {
+            // If this is a default Zone, create the incentivized ad normally
+            if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
+            {
+                [self.sdk.adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];
+            }
+            // Otherwise, use the Zones API
+            else
+            {
+                [self.sdk.adService loadNextAdForZoneIdentifier: self.zoneIdentifier andNotify: self];
+            }
         }
     }
 }

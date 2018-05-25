@@ -22,7 +22,8 @@
     #import "ALPrivacySettings.h"
 #endif
 
-#define EMPTY_ZONE @""
+#define DEFAULT_ZONE @""
+#define DEFAULT_TOKEN_ZONE @"token"
 
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
@@ -30,6 +31,12 @@
 @interface AppLovinMoPubBannerDelegate : NSObject<ALAdLoadDelegate, ALAdDisplayDelegate, ALAdViewEventDelegate>
 @property (nonatomic, weak) AppLovinBannerCustomEvent *parentCustomEvent;
 - (instancetype)initWithCustomEvent:(AppLovinBannerCustomEvent *)parentCustomEvent;
+@end
+
+/**
+ * The dedicated delegate for banner ads rendering ads from tokens.
+ */
+@interface AppLovinMoPubTokenBannerDelegate : AppLovinMoPubBannerDelegate<ALAdLoadDelegate>
 @end
 
 @interface AppLovinBannerCustomEvent()
@@ -61,8 +68,11 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 
 - (void)requestAdWithSize:(CGSize)size customEventInfo:(NSDictionary *)info
 {
-    [self log: @"Requesting AppLovin banner of size %@ with info: %@", NSStringFromCGSize(size), info];
-    
+    [self requestAdWithSize: size customEventInfo: info adMarkup: nil];
+}
+
+- (void)requestAdWithSize:(CGSize)size customEventInfo:(NSDictionary *)info adMarkup:(NSString *)adMarkup
+{
     // Collect and pass the user's consent from MoPub into the AppLovin SDK
     if ( [[MoPub sharedInstance] isGDPRApplicable] == MPBoolYes )
     {
@@ -70,47 +80,46 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         [ALPrivacySettings setHasUserConsent: canCollectPersonalInfo];
     }
     
+    self.sdk = [self SDKFromCustomEventInfo: info];
+    [self.sdk setPluginVersion: @"MoPub-3.0.0"];
+    
+    
     // Convert requested size to AppLovin Ad Size
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
     if ( adSize )
     {
-        self.sdk = [self SDKFromCustomEventInfo: info];
-        [self.sdk setPluginVersion: @"MoPub-3.0.0"];
+        [self log: @"Requesting AppLovin banner of size %@ with info: %@ and ad markup: %@", NSStringFromCGSize(size), info, adMarkup];
         
-        // Zones support is available on AppLovin SDK 4.5.0 and higher
-        NSString *zoneIdentifier = info[@"zone_id"];
-        if ( zoneIdentifier.length > 0 )
+        // Determine zone
+        NSString *zoneIdentifier;
+        if ( adMarkup.length > 0 )
         {
-            self.adView = ALGlobalAdViews[zoneIdentifier];
-            if ( !self.adView )
-            {
-                self.adView = [[ALAdView alloc] initWithSdk: self.sdk size: adSize];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-                [self.adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
-#pragma clang diagnostic pop
-                
-                ALGlobalAdViews[zoneIdentifier] = self.adView;
-            }
+            zoneIdentifier = DEFAULT_TOKEN_ZONE;
         }
         else
         {
-            self.adView = ALGlobalAdViews[EMPTY_ZONE];
-            if ( !self.adView )
-            {
-                self.adView = [[ALAdView alloc] initWithFrame: CGRectMake(0.0f, 0.0f, size.width, size.height)
-                                                         size: adSize
-                                                          sdk: self.sdk];
-                ALGlobalAdViews[EMPTY_ZONE] = self.adView;
-            }
+            zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
         }
         
-        AppLovinMoPubBannerDelegate *delegate = [[AppLovinMoPubBannerDelegate alloc] initWithCustomEvent: self];
-        self.adView.adLoadDelegate = delegate;
-        self.adView.adDisplayDelegate = delegate;
-        self.adView.adEventDelegate = delegate;
+        // Create incentivized ad based off of zone
+        self.adView = [[self class] adViewForFrame: CGRectMake(0, 0, size.width, size.height)
+                                            adSize: adSize
+                                    zoneIdentifier: zoneIdentifier
+                                       customEvent: self
+                                               sdk: self.sdk];
         
-        [self.adView loadNextAd];
+        // Use token API
+        if ( adMarkup.length > 0 )
+        {
+            // Ad load delegate attached to Ad Service as well as adview
+            AppLovinMoPubTokenBannerDelegate *tokenDelegate = [[AppLovinMoPubTokenBannerDelegate alloc] initWithCustomEvent: self];
+            [self.sdk.adService loadNextAdForAdToken: adMarkup andNotify: tokenDelegate];
+        }
+        // Zone/regular ad load
+        else
+        {
+            [self.adView loadNextAd];
+        }
     }
     else
     {
@@ -213,6 +222,43 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     }
 }
 
++ (ALAdView *)adViewForFrame:(CGRect)frame
+                      adSize:(ALAdSize *)adSize
+              zoneIdentifier:(NSString *)zoneIdentifier
+                 customEvent:(AppLovinBannerCustomEvent *)customEvent
+                         sdk:(ALSdk *)sdk
+{
+    ALAdView *adView;
+    
+    // Check if incentivized ad for zone already exists
+    if ( ALGlobalAdViews[zoneIdentifier] )
+    {
+        adView = ALGlobalAdViews[zoneIdentifier];
+    }
+    else
+    {
+        adView = [[ALAdView alloc] initWithFrame: frame size: adSize sdk: sdk];
+        
+        // If this is a custom zone
+        if ( ![DEFAULT_ZONE isEqualToString: zoneIdentifier] && ![DEFAULT_TOKEN_ZONE isEqualToString: zoneIdentifier] )
+        {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+            [adView performSelector: @selector(setZoneIdentifier:) withObject: zoneIdentifier];
+#pragma clang diagnostic pop
+        }
+        
+        ALGlobalAdViews[zoneIdentifier] = adView;
+    }
+    
+    AppLovinMoPubBannerDelegate *delegate = [[AppLovinMoPubBannerDelegate alloc] initWithCustomEvent: customEvent];
+    adView.adLoadDelegate = delegate;
+    adView.adDisplayDelegate = delegate;
+    adView.adEventDelegate = delegate;
+    
+    return adView;
+}
+
 @end
 
 @implementation AppLovinMoPubBannerDelegate
@@ -307,6 +353,16 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 - (void)ad:(ALAd *)ad didFailToDisplayInAdView:(ALAdView *)adView withError:(ALAdViewDisplayErrorCode)code
 {
     [self.parentCustomEvent log: @"Banner failed to display: %ld", code];
+}
+
+@end
+
+@implementation AppLovinMoPubTokenBannerDelegate
+
+- (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
+{
+    [self.parentCustomEvent.adView render: ad];
+    [super adService: adService didLoadAd: ad];
 }
 
 @end
