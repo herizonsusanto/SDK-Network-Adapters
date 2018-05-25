@@ -73,9 +73,11 @@ static NSObject *ALGlobalInterstitialAdsLock;
     [self.sdk setPluginVersion: @"MoPub-3.0.0"];
     
     
-    [self log: @"Requesting AppLovin interstitial with info: %@ and ad markup: %@", info, adMarkup];
+    BOOL hasAdMarkup = adMarkup.length > 0;
     
-    if ( adMarkup.length > 0 )
+    [self log: @"Requesting AppLovin interstitial with info: %@ and has ad markup: %d", info, hasAdMarkup];
+    
+    if ( hasAdMarkup )
     {
         self.zoneIdentifier = DEFAULT_TOKEN_ZONE;
         

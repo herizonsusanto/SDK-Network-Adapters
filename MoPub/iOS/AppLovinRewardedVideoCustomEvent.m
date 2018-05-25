@@ -80,11 +80,13 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     [self.sdk setPluginVersion: @"MoPub-3.0.0"];
     
     
-    [self log: @"Requesting AppLovin rewarded video with info: %@ and ad markup: %@", info, adMarkup];
+    BOOL hasAdMarkup = adMarkup.length > 0;
+    
+    [self log: @"Requesting AppLovin rewarded video with info: %@ and has ad markup: %@", info, hasAdMarkup];
     
     // Determine zone
     NSString *zoneIdentifier;
-    if ( adMarkup.length > 0 )
+    if ( hasAdMarkup )
     {
         zoneIdentifier = DEFAULT_TOKEN_ZONE;
     }
@@ -99,7 +101,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
                                                                         sdk: self.sdk];
     
     // Use token API
-    if ( adMarkup.length > 0 )
+    if ( hasAdMarkup )
     {
         self.tokenEvent = YES;
         

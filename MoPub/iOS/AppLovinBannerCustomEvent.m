@@ -88,11 +88,13 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
     if ( adSize )
     {
-        [self log: @"Requesting AppLovin banner of size %@ with info: %@ and ad markup: %@", NSStringFromCGSize(size), info, adMarkup];
+        BOOL hasAdMarkup = adMarkup.length > 0;
+        
+        [self log: @"Requesting AppLovin banner of size %@ with info: %@ and with ad markup: %d", NSStringFromCGSize(size), info, hasAdMarkup];
         
         // Determine zone
         NSString *zoneIdentifier;
-        if ( adMarkup.length > 0 )
+        if ( hasAdMarkup )
         {
             zoneIdentifier = DEFAULT_TOKEN_ZONE;
         }
@@ -109,7 +111,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
                                                sdk: self.sdk];
         
         // Use token API
-        if ( adMarkup.length > 0 )
+        if ( hasAdMarkup )
         {
             // Ad load delegate attached to Ad Service as well as adview
             AppLovinMoPubTokenBannerDelegate *tokenDelegate = [[AppLovinMoPubTokenBannerDelegate alloc] initWithCustomEvent: self];
