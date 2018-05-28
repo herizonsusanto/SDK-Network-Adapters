@@ -103,7 +103,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
             zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
         }
         
-        // Create incentivized ad based off of zone
+        // Create adview based off of zone
         self.adView = [[self class] adViewForFrame: CGRectMake(0, 0, size.width, size.height)
                                             adSize: adSize
                                     zoneIdentifier: zoneIdentifier
