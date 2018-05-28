@@ -232,7 +232,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 {
     ALAdView *adView;
     
-    // Check if incentivized ad for zone already exists
+    // Check if adview for zone already exists
     if ( ALGlobalAdViews[zoneIdentifier] )
     {
         adView = ALGlobalAdViews[zoneIdentifier];
