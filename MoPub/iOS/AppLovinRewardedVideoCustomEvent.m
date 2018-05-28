@@ -37,6 +37,7 @@
 @property (nonatomic, assign) BOOL fullyWatched;
 @property (nonatomic, strong) MPRewardedVideoReward *reward;
 @property (nonatomic, assign, getter=isTokenEvent) BOOL tokenEvent;
+@property (nonatomic, strong) ALAd *tokenAd;
 
 @end
 
@@ -50,9 +51,6 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 // on every ad load regardless if ad was actually displayed or not.
 static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobalIncentivizedInterstitialAds;
 
-static NSMutableArray<ALAd *> *ALGlobalTokenAdsQueue;
-static NSObject *ALGlobalTokenAdsQueueLock;
-
 #pragma mark - Class Initialization
 
 + (void)initialize
@@ -60,9 +58,6 @@ static NSObject *ALGlobalTokenAdsQueueLock;
     [super initialize];
     
     ALGlobalIncentivizedInterstitialAds = [NSMutableDictionary dictionary];
-    
-    ALGlobalTokenAdsQueue = [NSMutableArray array];
-    ALGlobalTokenAdsQueueLock = [[NSObject alloc] init];
 }
 
 #pragma mark - MPRewardedVideoCustomEvent Overridden Methods
@@ -123,7 +118,7 @@ static NSObject *ALGlobalTokenAdsQueueLock;
 {
     if ( [self isTokenEvent] )
     {
-        return [[self class] hasTokenAd];
+        return self.tokenAd != nil;
     }
     else
     {
@@ -138,12 +133,10 @@ static NSObject *ALGlobalTokenAdsQueueLock;
         self.reward = nil;
         self.fullyWatched = NO;
         
-        if ( [self isTokenEvent] )
+        if ( [self isTokenEvent] && self.tokenAd != nil )
         {
-            ALAd *tokenAd = [[self class] dequeueTokenAd];
-            
             [self.incent showOver: [UIApplication sharedApplication].keyWindow
-                         renderAd: tokenAd
+                         renderAd: self.tokenAd
                         andNotify: self];
         }
         else
@@ -172,7 +165,7 @@ static NSObject *ALGlobalTokenAdsQueueLock;
 {
     if ( [self isTokenEvent] )
     {
-        [[self class] enqueueTokenAd: ad];
+        self.tokenAd = ad;
     }
     
     [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
@@ -356,40 +349,6 @@ static NSObject *ALGlobalTokenAdsQueueLock;
     incent.adDisplayDelegate = customEvent;
     
     return incent;
-}
-
-+ (BOOL)hasTokenAd
-{
-    @synchronized ( ALGlobalTokenAdsQueueLock )
-    {
-        return ALGlobalTokenAdsQueue.count > 0;
-    }
-}
-
-+ (alnullable ALAd *)dequeueTokenAd
-{
-    @synchronized ( ALGlobalTokenAdsQueueLock )
-    {
-        if ( ALGlobalTokenAdsQueue.count > 0 )
-        {
-            ALAd *preloadedAd = [ALGlobalTokenAdsQueue firstObject];
-            [ALGlobalTokenAdsQueue removeObjectAtIndex: 0];
-            
-            return preloadedAd;
-        }
-        else
-        {
-            return nil;
-        }
-    }
-}
-
-+ (void)enqueueTokenAd:(ALAd *)ad
-{
-    @synchronized ( ALGlobalTokenAdsQueueLock )
-    {
-        [ALGlobalTokenAdsQueue addObject: ad];
-    }
 }
 
 @end
