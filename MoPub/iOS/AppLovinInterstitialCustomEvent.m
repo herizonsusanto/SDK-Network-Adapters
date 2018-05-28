@@ -86,16 +86,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     }
     else
     {
-        // Zones support is available on AppLovin SDK 4.5.0 and higher
-        if ( info[@"zone_id"] )
-        {
-            self.zoneIdentifier = info[@"zone_id"];
-        }
-        else
-        {
-            self.zoneIdentifier = DEFAULT_ZONE;
-        }
-        
+        self.zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
         
         // Check if we already have a preloaded ad for the given zone
         ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
