@@ -22,13 +22,14 @@
 #endif
 
 #define DEFAULT_ZONE @""
-#define DEFAULT_TOKEN_ZONE @"token"
 
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
 @property (nonatomic, strong) ALSdk *sdk;
 @property (nonatomic, strong) ALInterstitialAd *interstitialAd;
 @property (nonatomic,   copy) NSString *zoneIdentifier; // The zone identifier this instance of the custom event is loading for
+@property (nonatomic, assign, getter=isTokenEvent) BOOL tokenEvent;
+@property (nonatomic, strong) ALAd *tokenAd;
 
 @end
 
@@ -79,7 +80,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     
     if ( hasAdMarkup )
     {
-        self.zoneIdentifier = DEFAULT_TOKEN_ZONE;
+        self.tokenEvent = YES;
         
         // Use token API
         [self.sdk.adService loadNextAdForAdToken: adMarkup andNotify: self];
@@ -114,7 +115,17 @@ static NSObject *ALGlobalInterstitialAdsLock;
 
 - (void)showInterstitialFromRootViewController:(UIViewController *)rootViewController
 {
-    ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
+    ALAd *preloadedAd;
+    
+    if ( [self isTokenEvent] && self.tokenAd != nil )
+    {
+        preloadedAd = self.tokenAd;
+    }
+    else
+    {
+        preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
+    }
+    
     if ( preloadedAd )
     {
         self.interstitialAd = [[ALInterstitialAd alloc] initWithSdk: self.sdk];
@@ -140,7 +151,14 @@ static NSObject *ALGlobalInterstitialAdsLock;
 {
     [self log: @"Interstitial did load ad: %@", ad.adIdNumber];
     
-    [[self class] enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
+    if ( [self isTokenEvent] )
+    {
+        self.tokenAd = ad;
+    }
+    else
+    {
+        [[self class] enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
+    }
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.delegate interstitialCustomEvent: self didLoadAd: ad];
