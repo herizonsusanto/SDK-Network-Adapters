@@ -163,12 +163,12 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 
 - (void)adService:(ALAdService *)adService didLoadAd:(ALAd *)ad
 {
+    [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
+    
     if ( [self isTokenEvent] )
     {
         self.tokenAd = ad;
     }
-    
-    [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
