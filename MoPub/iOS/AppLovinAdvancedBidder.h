@@ -16,6 +16,9 @@
     #import "MPAdvancedBidder.h"
 #endif
 
+/**
+ * Include this class to use advanced bidding from AppLovin.
+ */
 @interface AppLovinAdvancedBidder : NSObject<MPAdvancedBidder>
 
 @end
