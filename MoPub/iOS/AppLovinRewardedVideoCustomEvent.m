@@ -133,7 +133,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         self.reward = nil;
         self.fullyWatched = NO;
         
-        if ( [self isTokenEvent] && self.tokenAd != nil )
+        if ( [self isTokenEvent] )
         {
             [self.incent showOver: [UIApplication sharedApplication].keyWindow
                          renderAd: self.tokenAd
