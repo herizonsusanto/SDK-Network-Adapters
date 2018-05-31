@@ -19,6 +19,7 @@ import com.applovin.sdk.AppLovinErrorCodes;
 import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
+import com.mopub.common.DataKeys;
 import com.mopub.common.MoPub;
 import com.mopub.common.privacy.PersonalInfoManager;
 import com.mopub.mobileads.CustomEventBanner;
@@ -52,8 +53,6 @@ public class AppLovinCustomEventBanner
     private static final String AD_WIDTH_KEY  = "com_mopub_ad_width";
     private static final String AD_HEIGHT_KEY = "com_mopub_ad_height";
 
-    private AppLovinSdk sdk;
-
     //
     // MoPub Custom Event Methods
     //
@@ -70,8 +69,6 @@ public class AppLovinCustomEventBanner
             return;
         }
 
-        log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + " and localExtras: " + localExtras );
-
         // Pass the user consent from the MoPub SDK as per GDPR
         PersonalInfoManager personalInfoManager = MoPub.getPersonalInformationManager();
         if ( personalInfoManager != null && personalInfoManager.gdprApplies() )
@@ -80,11 +77,17 @@ public class AppLovinCustomEventBanner
             AppLovinPrivacySettings.setHasUserConsent( canCollectPersonalInfo, context );
         }
 
+        AppLovinSdk sdk = retrieveSdk( serverExtras, context );
+        sdk.setPluginVersion( "MoPub-3.0.0" );
+
+
         final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )
         {
-            sdk = retrieveSdk( serverExtras, context );
-            sdk.setPluginVersion( "MoPub-3.0.0" );
+            final String adMarkup = DataKeys.ADM_KEY;
+            final boolean hasAdMarkup = TextUtils.isEmpty( adMarkup );
+
+            log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + ", localExtras: " + localExtras + " and has ad markup: " + hasAdMarkup );
 
             final AppLovinAdView adView = new AppLovinAdView( sdk, adSize, context );
             adView.setAdDisplayListener( new AppLovinAdDisplayListener()
@@ -190,24 +193,21 @@ public class AppLovinCustomEventBanner
                 }
             };
 
-            // Zones support is available on AppLovin SDK 7.5.0 and higher
-            final String zoneId;
-            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
+            if ( hasAdMarkup )
             {
-                zoneId = serverExtras.get( "zone_id" );
+                sdk.getAdService().loadNextAdForAdToken( adMarkup, adLoadListener );
             }
             else
             {
-                zoneId = null;
-            }
-
-            if ( !TextUtils.isEmpty( zoneId ) )
-            {
-                sdk.getAdService().loadNextAdForZoneId( zoneId, adLoadListener );
-            }
-            else
-            {
-                sdk.getAdService().loadNextAd( adSize, adLoadListener );
+                // Determine zone
+                if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
+                {
+                    sdk.getAdService().loadNextAdForZoneId( serverExtras.get( "zone_id" ), adLoadListener );
+                }
+                else
+                {
+                    sdk.getAdService().loadNextAd( adSize, adLoadListener );
+                }
             }
         }
         else
