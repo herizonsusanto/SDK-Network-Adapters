@@ -23,7 +23,6 @@
 #endif
 
 #define DEFAULT_ZONE @""
-#define DEFAULT_TOKEN_ZONE @"token"
 
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
@@ -93,17 +92,9 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         [self log: @"Requesting AppLovin banner of size %@ with info: %@ and with ad markup: %d", NSStringFromCGSize(size), info, hasAdMarkup];
         
         // Determine zone
-        NSString *zoneIdentifier;
-        if ( hasAdMarkup )
-        {
-            zoneIdentifier = DEFAULT_TOKEN_ZONE;
-        }
-        else
-        {
-            zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
-        }
+        NSString *zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
         
-        // Create adview based off of zone
+        // Create adview based off of zone (if any)
         self.adView = [[self class] adViewForFrame: CGRectMake(0, 0, size.width, size.height)
                                             adSize: adSize
                                     zoneIdentifier: zoneIdentifier
@@ -240,9 +231,8 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     else
     {
         adView = [[ALAdView alloc] initWithFrame: frame size: adSize sdk: sdk];
-        
         // If this is a custom zone
-        if ( ![DEFAULT_ZONE isEqualToString: zoneIdentifier] && ![DEFAULT_TOKEN_ZONE isEqualToString: zoneIdentifier] )
+        if ( zoneIdentifier.length > 0 )
         {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundeclared-selector"
