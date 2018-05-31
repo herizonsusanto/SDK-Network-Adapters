@@ -84,7 +84,7 @@ public class AppLovinCustomEventBanner
         final AppLovinAdSize adSize = appLovinAdSizeFromLocalExtras( localExtras );
         if ( adSize != null )
         {
-            final String adMarkup = DataKeys.ADM_KEY;
+            final String adMarkup = serverExtras.get( DataKeys.ADM_KEY );
             final boolean hasAdMarkup = TextUtils.isEmpty( adMarkup );
 
             log( DEBUG, "Requesting AppLovin banner with serverExtras: " + serverExtras + ", localExtras: " + localExtras + " and has ad markup: " + hasAdMarkup );
