@@ -72,6 +72,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     
     self.sdk = [self SDKFromCustomEventInfo: info];
     [self.sdk setPluginVersion: @"MoPub-3.0.0"];
+    self.sdk.mediationProvider = ALMediationProviderMoPub;
     
     
     BOOL hasAdMarkup = adMarkup.length > 0;

@@ -15,6 +15,7 @@ import com.applovin.sdk.AppLovinAdLoadListener;
 import com.applovin.sdk.AppLovinAdRewardListener;
 import com.applovin.sdk.AppLovinAdVideoPlaybackListener;
 import com.applovin.sdk.AppLovinErrorCodes;
+import com.applovin.sdk.AppLovinMediationProvider;
 import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkSettings;
@@ -80,6 +81,7 @@ public class AppLovinCustomEventRewardedVideo
         {
             sdk = retrieveSdk( serverExtras, activity );
             sdk.setPluginVersion( "MoPub-3.0.0" );
+            sdk.setMediationProvider( AppLovinMediationProvider.MOPUB );
 
             initialized = true;
 
