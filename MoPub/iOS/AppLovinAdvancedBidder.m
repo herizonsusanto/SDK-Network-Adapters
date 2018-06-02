@@ -8,6 +8,12 @@
 
 #import "AppLovinAdvancedBidder.h"
 
+#if __has_include(<AppLovinSDK/AppLovinSDK.h>)
+    #import <AppLovinSDK/AppLovinSDK.h>
+#else
+    #import "ALSdk.h"
+#endif
+
 @implementation AppLovinAdvancedBidder
 
 - (NSString *)creativeNetworkName
@@ -17,7 +23,7 @@
 
 - (NSString *)token
 {
-    return @"";
+    return [ALSdk shared].adService.bidToken;
 }
 
 @end

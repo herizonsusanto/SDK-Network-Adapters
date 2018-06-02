@@ -2,6 +2,7 @@ package YOUR_PACKAGE_NAME;
 
 import android.content.Context;
 
+import com.applovin.sdk.AppLovinSdk;
 import com.mopub.common.MoPubAdvancedBidder;
 
 /**
@@ -19,6 +20,6 @@ public class AppLovinAdvancedBidder
     @Override
     public String getToken(final Context context)
     {
-        return null;
+        return AppLovinSdk.getInstance( context ).getAdService().getBidToken();
     }
 }
