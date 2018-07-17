@@ -80,7 +80,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     }
     
     self.sdk = [self SDKFromCustomEventInfo: info];
-    [self.sdk setPluginVersion: @"MoPub-3.0.0"];
+    [self.sdk setPluginVersion: @"MoPub-3.1.0"];
     self.sdk.mediationProvider = ALMediationProviderMoPub;
     
     
