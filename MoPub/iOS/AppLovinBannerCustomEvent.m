@@ -198,10 +198,12 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 - (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
 {
     NSString *SDKKey = info[@"sdk_key"];
-    ALSdk *sdk = ( SDKKey.length > 0 ) ? [ALSdk sharedWithKey: SDKKey] ? [ALSdk shared];
+    ALSdk *sdk = ( SDKKey.length > 0 ) ? [ALSdk sharedWithKey: SDKKey] : [ALSdk shared];
     
     [sdk setPluginVersion: @"MoPub-3.0.0"];
     [sdk setMediationProvider: ALMediationProviderMoPub];
+    
+    return sdk;
 }
 
 @end
