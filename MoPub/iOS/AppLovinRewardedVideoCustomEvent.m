@@ -21,6 +21,13 @@
 
 #define DEFAULT_ZONE @""
 
+@interface AppLovinRewardedCustomEventAdStorage : NSObject
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<ALAd *> *> *ads;
+- (BOOL)hasAdForZoneIdentifier:(NSString *)zoneIdentifier;
+- (void)enqueueAd:(ALAd *)ad forZoneIdentifier:(NSString *)zoneIdentifier;
+- (ALAd *)dequeueAdForZoneIdentifier:(NSString *)zoneIdentifier;
+@end
+
 // This class implementation with the old classname is left here for backwards compatibility purposes.
 @implementation AppLovinRewardedCustomEvent
 @end
@@ -29,6 +36,7 @@
 
 @property (nonatomic, strong) ALSdk *sdk;
 @property (nonatomic, strong) ALIncentivizedInterstitialAd *incent;
+@property (nonatomic,   copy) NSString *zoneIdentifier;
 
 @property (nonatomic, assign) BOOL fullyWatched;
 @property (nonatomic, strong) MPRewardedVideoReward *reward;
@@ -39,10 +47,9 @@
 
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
-// A dictionary of Zone -> `ALIncentivizedInterstitialAd` to be shared by instances of the custom event.
-// This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `ALIncentivizedInterstitialAd`)
-// on every ad load regardless if ad was actually displayed or not.
-static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobalIncentivizedInterstitialAds;
+// Guarantees the count for each MoPub ad request == amount of ads we load
+static AppLovinRewardedCustomEventAdStorage *ALRewardedCustomEventAdStorage;
+static NSObject *ALRewardedCustomEventAdStorageLock;
 
 #pragma mark - Class Initialization
 
@@ -50,7 +57,8 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 {
     [super initialize];
     
-    ALGlobalIncentivizedInterstitialAds = [NSMutableDictionary dictionary];
+    ALRewardedCustomEventAdStorage = [[AppLovinRewardedCustomEventAdStorage alloc] init];
+    ALRewardedCustomEventAdStorageLock = [[NSObject alloc] init];
 }
 
 #pragma mark - MPRewardedVideoCustomEvent Overridden Methods
@@ -68,57 +76,52 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     
     self.sdk = [self SDKFromCustomEventInfo: info];
     
-    // Zones support is available on AppLovin SDK 4.5.0 and higher
-    NSString *zoneIdentifier;
     if ( info[@"zone_id"] )
     {
-        zoneIdentifier = info[@"zone_id"];
+        self.zoneIdentifier = info[@"zone_id"];
+
+        // If we have zone id - we can load it via zone API
+        [self.sdk.adService loadNextAdForZoneIdentifier: self.zoneIdentifier andNotify: self];
     }
     else
     {
-        zoneIdentifier = DEFAULT_ZONE;
-    }
-    
-    // Check if incentivized ad for zone already exists
-    if ( ALGlobalIncentivizedInterstitialAds[zoneIdentifier] )
-    {
-        self.incent = ALGlobalIncentivizedInterstitialAds[zoneIdentifier];
-    }
-    else
-    {
-        // If this is a default Zone, create the incentivized ad normally
-        if ( [DEFAULT_ZONE isEqualToString: zoneIdentifier] )
-        {
-            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
-        }
-        // Otherwise, use the Zones API
-        else
-        {
-            self.incent = [[ALIncentivizedInterstitialAd alloc] initWithZoneIdentifier: zoneIdentifier sdk: self.sdk];            
-        }
+        self.zoneIdentifier = DEFAULT_ZONE;
         
-        ALGlobalIncentivizedInterstitialAds[zoneIdentifier] = self.incent;
+        // Create NEW instance of incentivized ad to load non-zone ad
+        ALIncentivizedInterstitialAd *incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
+        [incent preloadAndNotify: self];
     }
-    
-    self.incent.adVideoPlaybackDelegate = self;
-    self.incent.adDisplayDelegate = self;
-    
-    [self.incent preloadAndNotify: self];
 }
 
 - (BOOL)hasAdAvailable
 {
-    return self.incent.readyForDisplay;
+    @synchronized ( ALRewardedCustomEventAdStorageLock )
+    {
+        return [ALRewardedCustomEventAdStorage hasAdForZoneIdentifier: self.zoneIdentifier];
+    }
 }
 
 - (void)presentRewardedVideoFromViewController:(UIViewController *)viewController
 {
-    if ( [self hasAdAvailable] )
+    ALAd *ad;
+    
+    @synchronized ( ALRewardedCustomEventAdStorageLock )
     {
+        // Retrieve ad
+        ad = [ALRewardedCustomEventAdStorage dequeueAdForZoneIdentifier: self.zoneIdentifier];
+    }
+    
+    if ( ad )
+    {
+        // Clear states
         self.reward = nil;
         self.fullyWatched = NO;
         
-        [self.incent showAndNotify: self];
+        // Hold reference to the displaying incent ad so it does not dealloc
+        self.incent = [[ALIncentivizedInterstitialAd alloc] initWithSdk: self.sdk];
+        self.incent.adVideoPlaybackDelegate = self;
+        self.incent.adDisplayDelegate = self;
+        [self.incent showOver: [UIApplication sharedApplication].keyWindow renderAd: ad andNotify: self];
     }
     else
     {
@@ -141,6 +144,11 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
 {
     [self log: @"Rewarded video did load ad: %@", ad.adIdNumber];
     
+    @synchronized ( ALRewardedCustomEventAdStorageLock )
+    {
+        [ALRewardedCustomEventAdStorage enqueueAd: ad forZoneIdentifier: self.zoneIdentifier];
+    }
+            
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.delegate rewardedVideoDidLoadAdForCustomEvent: self];
     });
@@ -282,6 +290,57 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     [sdk setMediationProvider: ALMediationProviderMoPub];
     
     return sdk;
+}
+
+@end
+
+@implementation AppLovinRewardedCustomEventAdStorage
+
+- (instancetype)init
+{
+    self = [super init];
+    if ( self )
+    {
+        self.ads = [NSMutableDictionary dictionary];
+    }
+    return self;
+}
+
+- (BOOL)hasAdForZoneIdentifier:(NSString *)zoneIdentifier
+{
+    return [self adQueueForZoneIdentifier: zoneIdentifier].count > 0;
+}
+
+- (void)enqueueAd:(ALAd *)ad forZoneIdentifier:(NSString *)zoneIdentifier
+{
+    [[self adQueueForZoneIdentifier: zoneIdentifier] addObject: ad];
+}
+
+- (ALAd *)dequeueAdForZoneIdentifier:(NSString *)zoneIdentifier
+{
+    NSMutableArray<ALAd *> *adQueue = [self adQueueForZoneIdentifier: zoneIdentifier];
+    ALAd *dequeuedAd = [adQueue firstObject];
+    if ( dequeuedAd )
+    {
+        [adQueue removeObjectAtIndex: 0];
+    }
+    
+    return dequeuedAd;
+}
+
+- (NSMutableArray<ALAd *> *)adQueueForZoneIdentifier:(NSString *)zoneIdentifier
+{
+    if ( self.ads[zoneIdentifier] )
+    {
+        return self.ads[zoneIdentifier];
+    }
+    else
+    {
+        NSMutableArray<ALAd *> *adQueue = [NSMutableArray array];
+        self.ads[zoneIdentifier] = adQueue;
+        
+        return adQueue;
+    }
 }
 
 @end
