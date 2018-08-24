@@ -62,7 +62,6 @@ static NSObject *ALGlobalInterstitialAdsLock;
     }
     
     self.sdk = [self SDKFromCustomEventInfo: info];
-    [self.sdk setPluginVersion: @"MoPub-3.0.0"];
     
     // Zones support is available on AppLovin SDK 4.5.0 and higher
     if ( info[@"zone_id"] )
