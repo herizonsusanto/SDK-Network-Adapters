@@ -56,7 +56,6 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     }
     
     self.sdk = [self SDKFromCustomEventInfo: info];
-    [self.sdk setPluginVersion: @"MoPub-3.0.0"];
     
     [self.sdk.nativeAdService loadNativeAdGroupOfCount: 1 andNotify: self];
 }
@@ -119,14 +118,12 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 - (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
 {
     NSString *SDKKey = info[@"sdk_key"];
-    if ( SDKKey.length > 0 )
-    {
-        return [ALSdk sharedWithKey: SDKKey];
-    }
-    else
-    {
-        return [ALSdk shared];
-    }
+    ALSdk *sdk = ( SDKKey.length > 0 ) ? [ALSdk sharedWithKey: SDKKey] : [ALSdk shared];
+    
+    [sdk setPluginVersion: @"MoPub-3.0.0"];
+    [sdk setMediationProvider: ALMediationProviderMoPub];
+    
+    return sdk;
 }
 
 @end
