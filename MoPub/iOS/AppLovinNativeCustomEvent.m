@@ -13,6 +13,7 @@
 #import "MPNativeAdConstants.h"
 #import "MPError.h"
 #import "MoPub.h"
+#import "MPLogging.h"
 
 #if __has_include(<AppLovinSDK/AppLovinSDK.h>)
     #import <AppLovinSDK/AppLovinSDK.h>
@@ -39,7 +40,6 @@
 
 @implementation AppLovinNativeCustomEvent
 
-static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
 #pragma mark - MPNativeCustomEvent Overridden Methods
@@ -108,15 +108,12 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 + (void)log:(NSString *)format, ...
 {
-    if ( kALLoggingEnabled )
-    {
-        va_list valist;
-        va_start(valist, format);
-        NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
-        va_end(valist);
-        
-        NSLog(@"AppLovinNativeCustomEvent: %@", message);
-    }
+    va_list valist;
+    va_start(valist, format);
+    NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
+    va_end(valist);
+    
+    MPLogDebug(@"AppLovinNativeCustomEvent : %@", message);
 }
 
 - (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
