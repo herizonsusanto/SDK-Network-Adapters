@@ -21,6 +21,10 @@
 
 #define DEFAULT_ZONE @""
 
+/**
+ * This class guarantees that the count for each MoPub ad request, we get that same count of ads loaded.
+ * So if a publisher loads 2 ads for a particular zone - we will honor both of those ad requests.
+ */
 @interface AppLovinRewardedCustomEventAdStorage : NSObject
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<ALAd *> *> *ads;
 - (BOOL)hasAdForZoneIdentifier:(NSString *)zoneIdentifier;
@@ -47,7 +51,6 @@
 
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
-// Guarantees the count for each MoPub ad request == amount of ads we load
 static AppLovinRewardedCustomEventAdStorage *ALRewardedCustomEventAdStorage;
 static NSObject *ALRewardedCustomEventAdStorageLock;
 
