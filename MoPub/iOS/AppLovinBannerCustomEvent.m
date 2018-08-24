@@ -300,6 +300,11 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
 - (void)ad:(ALAd *)ad didFailToDisplayInAdView:(ALAdView *)adView withError:(ALAdViewDisplayErrorCode)code
 {
     [self.parentCustomEvent log: @"Banner failed to display: %ld", code];
+    
+    NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                         code: [self.parentCustomEvent toMoPubErrorCode: code]
+                                     userInfo: @{NSLocalizedFailureReasonErrorKey : @"Adapter failed to display banner"}];
+    [self.parentCustomEvent.delegate bannerCustomEvent: self.parentCustomEvent didFailToLoadAdWithError: error];
 }
 
 @end
