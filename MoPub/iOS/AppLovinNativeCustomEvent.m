@@ -77,16 +77,27 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
     
     [self precacheImagesWithURLs: imageURLs completionBlock:^(NSArray<NSError *> *errors)
      {
-         [[self class] log: @"Native ad done precaching"];
-         
-         AppLovinNativeAdapter *adapter = [[AppLovinNativeAdapter alloc] initWithNativeAd: nativeAd];
-         MPNativeAd *nativeAd = [[MPNativeAd alloc] initWithAdAdapter: adapter];
-         
-         dispatch_async(dispatch_get_main_queue(), ^{
-             [self.delegate nativeCustomEvent: self didLoadAd: nativeAd];
-         });
-         
-         [adapter willAttachToView: nil];
+         if ( errors.count > 0 )
+         {
+             [[self class] log: @"Native ad failed to precache images."];
+             NSError *error = [NSError errorWithDomain: kALMoPubMediationErrorDomain
+                                                  code: MPNativeAdErrorImageDownloadFailed
+                                              userInfo: nil];
+             
+             dispatch_async(dispatch_get_main_queue(), ^{
+                 [self.delegate nativeCustomEvent: self didFailToLoadAdWithError: error];
+             });
+         }
+         else
+         {
+             [[self class] log: @"Native ad done precaching"];
+             AppLovinNativeAdapter *adapter = [[AppLovinNativeAdapter alloc] initWithNativeAd: nativeAd];
+             MPNativeAd *nativeAd = [[MPNativeAd alloc] initWithAdAdapter: adapter];
+             
+             dispatch_async(dispatch_get_main_queue(), ^{
+                 [self.delegate nativeCustomEvent: self didLoadAd: nativeAd];
+             });
+         }
      }];
 }
 
@@ -165,7 +176,9 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 {
     if ( [self.delegate respondsToSelector: @selector(nativeAdWillLogImpression:)] )
     {
-        [self.delegate nativeAdWillLogImpression: self];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.delegate nativeAdWillLogImpression: self];
+        });
     }
     
     // As of >= 4.1.0, we support convenience methods for impression tracking

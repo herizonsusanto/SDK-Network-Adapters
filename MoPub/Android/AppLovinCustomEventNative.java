@@ -18,6 +18,7 @@ import com.applovin.sdk.AppLovinSdkSettings;
 import com.mopub.common.MoPub;
 import com.mopub.common.privacy.PersonalInfoManager;
 import com.mopub.nativeads.CustomEventNative;
+import com.mopub.nativeads.NativeClickHandler;
 import com.mopub.nativeads.NativeErrorCode;
 import com.mopub.nativeads.NativeImageHelper;
 import com.mopub.nativeads.StaticNativeAd;
@@ -49,10 +50,7 @@ public class AppLovinCustomEventNative
     private CustomEventNativeListener nativeListener;
     private Context                   context;
 
-    //
-    // MoPub Custom Event Methods
-    //
-
+    //region MoPub Custom Event Methods
     @Override
     public void loadNativeAd(final Context context, final CustomEventNativeListener customEventNativeListener, final Map<String, Object> localExtras, final Map<String, String> serverExtras)
     {
@@ -74,11 +72,9 @@ public class AppLovinCustomEventNative
 
         sdk.getNativeAdService().loadNativeAds( 1, this );
     }
+    //endregion
 
-    //
-    // Native Ad Load Listener
-    //
-
+    //region Native Ad Load Listener
     @Override
     public void onNativeAdsLoaded(final List nativeAds)
     {
@@ -138,10 +134,14 @@ public class AppLovinCustomEventNative
         private final Context          parentContext;
         private       View             parentView;
 
+        private final NativeClickHandler nativeClickHandler;
+
         AppLovinMopubNativeAd(final AppLovinNativeAd nativeAd, final Context context)
         {
             parentNativeAd = nativeAd;
             parentContext = context;
+
+            nativeClickHandler = new NativeClickHandler( context );
 
             setTitle( nativeAd.getTitle() );
             setText( nativeAd.getDescriptionText() );
@@ -155,25 +155,6 @@ public class AppLovinCustomEventNative
         @Override
         public void prepare(@NonNull final View view)
         {
-            // PLEASE NOTE: Use the code below if you would like AppLovin to handle the ad clicks for you:
-            /*
-            final View.OnClickListener onClickListener = new View.OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    parentNativeAd.launchClickTarget( parentContext );
-                    notifyAdClicked();
-                }
-            };
-
-            parentView = view;
-            parentView.setOnClickListener( onClickListener );
-
-            // If you need to make subviews of the view clickable (e.g. CTA button), apply the click listener to them:
-            parentView.findViewById( R.id.ID_OF_SUBVIEW ).setOnClickListener( onClickListener );
-            */
-
             // As of AppLovin SDK >=7.1.0, impression tracking convenience methods have been added to AppLovinNativeAd
             parentNativeAd.trackImpression( new AppLovinPostbackListener()
             {
@@ -190,6 +171,17 @@ public class AppLovinCustomEventNative
                     log( ERROR, "Native ad impression failed to execute." );
                 }
             } );
+
+            nativeClickHandler.setOnClickListener( view, this );
+        }
+
+        @Override
+        public void handleClick(@NonNull final View view)
+        {
+            super.handleClick( view );
+
+            notifyAdClicked();
+            parentNativeAd.launchClickTarget( view.getContext() );
         }
 
         @Override
@@ -204,11 +196,9 @@ public class AppLovinCustomEventNative
             AppLovinCustomEventNative.this.nativeListener = null;
         }
     }
+    //endregion
 
-    //
-    // Utility Methods
-    //
-
+    //region Utility Methods
     private static void log(final int priority, final String message)
     {
         if ( LOGGING_ENABLED )
@@ -279,4 +269,5 @@ public class AppLovinCustomEventNative
 
         return sdk;
     }
+    //endregion
 }
