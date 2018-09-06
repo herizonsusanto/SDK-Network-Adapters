@@ -49,6 +49,11 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 - (void)requestAdWithCustomEventInfo:(NSDictionary *)info
 {
+    [self requestAdWithCustomEventInfo: info adMarkup: nil];
+}
+
+- (void)requestAdWithCustomEventInfo:(NSDictionary *)info adMarkup:(NSString *)adMarkup
+{
     [[self class] log: @"Requesting AppLovin native ad with info: %@", info];
     
     // Collect and pass the user's consent from MoPub into the AppLovin SDK
