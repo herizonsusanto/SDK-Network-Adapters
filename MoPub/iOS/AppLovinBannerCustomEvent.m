@@ -23,6 +23,7 @@
 #endif
 
 #define DEFAULT_ZONE @""
+#define ZONE_FROM_INFO(__INFO) ( ([__INFO[@"zone_id"] isKindOfClass: [NSString class]] && ((NSString *) __INFO[@"zone_id"]).length > 0) ? __INFO[@"zone_id"] : @"" )
 
 /**
  * The receiver object of the ALAdView's delegates. This is used to prevent a retain cycle between the ALAdView and AppLovinBannerCustomEvent.
@@ -83,7 +84,6 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
     [self.sdk setPluginVersion: @"MoPub-3.1.0"];
     self.sdk.mediationProvider = ALMediationProviderMoPub;
     
-    
     // Convert requested size to AppLovin Ad Size
     ALAdSize *adSize = [self appLovinAdSizeFromRequestedSize: size];
     if ( adSize )
@@ -92,8 +92,7 @@ static NSMutableDictionary<NSString *, ALAdView *> *ALGlobalAdViews;
         
         [self log: @"Requesting AppLovin banner of size %@ with info: %@ and with ad markup: %d", NSStringFromCGSize(size), info, hasAdMarkup];
         
-        // Determine zone
-        NSString *zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
+        NSString *zoneIdentifier = ZONE_FROM_INFO(info);
         
         // Create adview based off of zone (if any)
         self.adView = [[self class] adViewForFrame: CGRectMake(0, 0, size.width, size.height)

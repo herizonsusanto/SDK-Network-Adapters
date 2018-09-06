@@ -47,9 +47,10 @@ public class AppLovinCustomEventRewardedVideo
         extends CustomEventRewardedVideo
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener, AppLovinAdRewardListener
 {
-    private static final boolean LOGGING_ENABLED    = true;
-    private static final String  DEFAULT_ZONE       = "";
-    private static final String  DEFAULT_TOKEN_ZONE = "token";
+    private static final boolean LOGGING_ENABLED           = true;
+    private static final String  DEFAULT_ZONE              = "";
+    private static final String  DEFAULT_TOKEN_ZONE        = "token";
+    private static final String  ZONE_ID_SERVER_EXTRAS_KEY = "zone_id";
 
     // A map of Zone -> `AppLovinIncentivizedInterstitial` to be shared by instances of the custom event.
     // This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `AppLovinIncentivizedInterstitial`)
@@ -73,7 +74,9 @@ public class AppLovinCustomEventRewardedVideo
     //
 
     @Override
-    protected boolean checkAndInitializeSdk(@NonNull final Activity activity, @NonNull final Map<String, Object> localExtras, @NonNull final Map<String, String> serverExtras) throws Exception
+    protected boolean checkAndInitializeSdk(@NonNull final Activity activity,
+                                            @NonNull final Map<String, Object> localExtras,
+                                            @NonNull final Map<String, String> serverExtras) throws Exception
     {
         log( DEBUG, "Initializing AppLovin rewarded video..." );
 
@@ -119,9 +122,10 @@ public class AppLovinCustomEventRewardedVideo
         }
         else
         {
-            if ( AppLovinSdk.VERSION_CODE >= 750 && serverExtras != null && serverExtras.containsKey( "zone_id" ) )
+            final String serverExtrasZoneId = serverExtras.get( ZONE_ID_SERVER_EXTRAS_KEY );
+            if ( !TextUtils.isEmpty( serverExtrasZoneId ) )
             {
-                zoneId = serverExtras.get( "zone_id" );
+                zoneId = serverExtrasZoneId;
             }
             else
             {

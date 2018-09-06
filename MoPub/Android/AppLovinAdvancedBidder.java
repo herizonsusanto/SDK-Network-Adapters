@@ -1,4 +1,4 @@
-package YOUR_PACKAGE_NAME;
+package MoPub.Android;
 
 import android.content.Context;
 
@@ -7,6 +7,8 @@ import com.mopub.common.MoPubAdvancedBidder;
 
 /**
  * Include this class to use advanced bidding from AppLovin.
+ * <p>
+ * Created by Thomas So on 5/22/18.
  */
 public class AppLovinAdvancedBidder
         implements MoPubAdvancedBidder

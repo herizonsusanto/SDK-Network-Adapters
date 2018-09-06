@@ -47,8 +47,9 @@ public class AppLovinCustomEventInterstitial
         extends CustomEventInterstitial
         implements AppLovinAdLoadListener, AppLovinAdDisplayListener, AppLovinAdClickListener, AppLovinAdVideoPlaybackListener
 {
-    private static final boolean LOGGING_ENABLED = true;
-    private static final String  DEFAULT_ZONE    = "";
+    private static final boolean LOGGING_ENABLED           = true;
+    private static final String  DEFAULT_ZONE              = "";
+    private static final String  ZONE_ID_SERVER_EXTRAS_KEY = "zone_id";
 
     private static final Handler UI_HANDLER = new Handler( Looper.getMainLooper() );
 
@@ -98,7 +99,6 @@ public class AppLovinCustomEventInterstitial
         sdk.setPluginVersion( "MoPub-3.1.0" );
         sdk.setMediationProvider( AppLovinMediationProvider.MOPUB );
 
-
         final String adMarkup = serverExtras.get( DataKeys.ADM_KEY );
         final boolean hasAdMarkup = !TextUtils.isEmpty( adMarkup );
 
@@ -113,9 +113,8 @@ public class AppLovinCustomEventInterstitial
         }
         else
         {
-            // Zones support is available on AppLovin SDK 7.5.0 and higher
-            final String serverExtrasZoneId = serverExtras != null ? serverExtras.get( "zone_id" ) : null;
-            zoneId = ( !TextUtils.isEmpty( serverExtrasZoneId ) && AppLovinSdk.VERSION_CODE >= 750 ) ? serverExtrasZoneId : DEFAULT_ZONE;
+            final String serverExtrasZoneId = serverExtras.get( "zone_id" );
+            zoneId = !TextUtils.isEmpty( serverExtrasZoneId ) ? serverExtrasZoneId : DEFAULT_ZONE;
 
             // Check if we already have a preloaded ad for the given zone
             final AppLovinAd preloadedAd = dequeueAd( zoneId );
@@ -127,15 +126,13 @@ public class AppLovinCustomEventInterstitial
             // No ad currently preloaded
             else
             {
-                // If this is a default Zone, create the incentivized ad normally
-                if ( DEFAULT_ZONE.equals( zoneId ) )
-                {
-                    sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
-                }
-                // Otherwise, use the Zones API
-                else
+                if ( !TextUtils.isEmpty( zoneId ) )
                 {
                     sdk.getAdService().loadNextAdForZoneId( zoneId, this );
+                }
+                else
+                {
+                    sdk.getAdService().loadNextAd( AppLovinAdSize.INTERSTITIAL, this );
                 }
             }
         }

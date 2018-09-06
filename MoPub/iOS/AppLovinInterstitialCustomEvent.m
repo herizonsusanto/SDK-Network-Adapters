@@ -22,6 +22,7 @@
 #endif
 
 #define DEFAULT_ZONE @""
+#define ZONE_FROM_INFO(__INFO) ( ([__INFO[@"zone_id"] isKindOfClass: [NSString class]] && ((NSString *) __INFO[@"zone_id"]).length > 0) ? __INFO[@"zone_id"] : @"" )
 
 @interface AppLovinInterstitialCustomEvent() <ALAdLoadDelegate, ALAdDisplayDelegate, ALAdVideoPlaybackDelegate>
 
@@ -74,7 +75,6 @@ static NSObject *ALGlobalInterstitialAdsLock;
     [self.sdk setPluginVersion: @"MoPub-3.1.0"];
     self.sdk.mediationProvider = ALMediationProviderMoPub;
     
-    
     BOOL hasAdMarkup = adMarkup.length > 0;
     
     [self log: @"Requesting AppLovin interstitial with info: %@ and has ad markup: %d", info, hasAdMarkup];
@@ -88,7 +88,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
     }
     else
     {
-        self.zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
+        self.zoneIdentifier = ZONE_FROM_INFO(info);
         
         // Check if we already have a preloaded ad for the given zone
         ALAd *preloadedAd = [[self class] dequeueAdForZoneIdentifier: self.zoneIdentifier];
@@ -100,7 +100,7 @@ static NSObject *ALGlobalInterstitialAdsLock;
         // No ad currently preloaded
         else
         {
-            // If this is a default Zone, create the incentivized ad normally
+            // If this is a default Zone, create the ad normally
             if ( [DEFAULT_ZONE isEqualToString: self.zoneIdentifier] )
             {
                 [self.sdk.adService loadNextAd: [ALAdSize sizeInterstitial] andNotify: self];

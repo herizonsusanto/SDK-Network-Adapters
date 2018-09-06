@@ -24,6 +24,7 @@
 
 #define DEFAULT_ZONE @""
 #define DEFAULT_TOKEN_ZONE @"token"
+#define ZONE_FROM_INFO(__INFO) ( ([__INFO[@"zone_id"] isKindOfClass: [NSString class]] && ((NSString *) __INFO[@"zone_id"]).length > 0) ? __INFO[@"zone_id"] : @"" )
 
 // This class implementation with the old classname is left here for backwards compatibility purposes.
 @implementation AppLovinRewardedCustomEvent
@@ -93,7 +94,7 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
     }
     else
     {
-        zoneIdentifier = info[@"zone_id"] ?: DEFAULT_ZONE;
+        zoneIdentifier = ZONE_FROM_INFO(info);
     }
     
     // Create incentivized ad based off of zone
