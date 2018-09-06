@@ -15,6 +15,7 @@
 #endif
 
 @implementation AppLovinAdvancedBidder
+@dynamic creativeNetworkName, token;
 
 - (NSString *)creativeNetworkName
 {
