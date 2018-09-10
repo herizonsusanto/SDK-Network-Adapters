@@ -101,9 +101,6 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         ALGlobalIncentivizedInterstitialAds[zoneIdentifier] = self.incent;
     }
     
-    self.incent.adVideoPlaybackDelegate = self;
-    self.incent.adDisplayDelegate = self;
-    
     [self.incent preloadAndNotify: self];
 }
 
@@ -119,6 +116,9 @@ static NSMutableDictionary<NSString *, ALIncentivizedInterstitialAd *> *ALGlobal
         self.reward = nil;
         self.fullyWatched = NO;
         
+        // It is important to assign delegates to latest instance of custom event before showing
+        self.incent.adVideoPlaybackDelegate = self;
+        self.incent.adDisplayDelegate = self;
         [self.incent showAndNotify: self];
     }
     else
