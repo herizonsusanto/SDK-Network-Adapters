@@ -183,7 +183,7 @@ public class AppLovinCustomEventRewardedVideo
         }
         else
         {
-            return incentivizedInterstitial.isAdReadyToDisplay();
+            return ( incentivizedInterstitial != null && incentivizedInterstitial.isAdReadyToDisplay() );
         }
     }
 
