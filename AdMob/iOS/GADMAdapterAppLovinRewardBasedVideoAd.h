@@ -8,13 +8,7 @@
 
 @import GoogleMobileAds;
 
-#if __has_include(<AppLovinSDK/AppLovinSDK.h>)
-    #import <AppLovinSDK/AppLovinSDK.h>
-#else
-    #import "ALAnnotations.h"
-#endif
-
-AL_ASSUME_NONNULL_BEGIN
+NS_ASSUME_NONNULL_BEGIN
 
 @interface GADMAdapterAppLovinRewardBasedVideoAd : NSObject <GADMRewardBasedVideoAdNetworkAdapter>
 
@@ -23,8 +17,8 @@ AL_ASSUME_NONNULL_BEGIN
 @interface AppLovinAdNetworkExtras : NSObject<GADAdNetworkExtras>
 
 // AppLovin Zone ID to be used for rewarded video ad requests.
-@property (nonatomic, copy, alnullable) NSString *zoneIdentifier;
+@property (nonatomic, copy, nullable) NSString *zoneIdentifier;
 
 @end
 
-AL_ASSUME_NONNULL_END
+NS_ASSUME_NONNULL_END
