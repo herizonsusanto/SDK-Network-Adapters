@@ -34,7 +34,7 @@
 
 static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALAdMobMediationErrorDomain = @"com.applovin.sdk.mediation.admob.errorDomain";
-static NSString *const kALAdMobAdapterVersion = @"AdMob-2.3.2";
+static NSString *const kALAdMobAdapterVersion = @"AdMob-2.4.0";
 
 // A dictionary of Zone -> `ALIncentivizedInterstitialAd` to be shared by instances of the custom event.
 // This prevents skipping of ads as this adapter will be re-created and preloaded (along with underlying `ALIncentivizedInterstitialAd`)
