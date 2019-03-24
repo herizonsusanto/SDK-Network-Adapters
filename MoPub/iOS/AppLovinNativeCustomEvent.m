@@ -38,8 +38,6 @@
 @end
 
 @implementation AppLovinNativeCustomEvent
-
-static const BOOL kALLoggingEnabled = YES;
 static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediation.mopub.errorDomain";
 
 #pragma mark - MPNativeCustomEvent Overridden Methods
@@ -108,28 +106,18 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 + (void)log:(NSString *)format, ...
 {
-    if ( kALLoggingEnabled )
-    {
-        va_list valist;
-        va_start(valist, format);
-        NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
-        va_end(valist);
-        
-        NSLog(@"AppLovinNativeCustomEvent: %@", message);
-    }
+    va_list valist;
+    va_start(valist, format);
+    NSString *message = [[NSString alloc] initWithFormat: format arguments: valist];
+    va_end(valist);
+    
+    NSLog(@"AppLovinNativeCustomEvent: %@", message);
 }
 
 - (ALSdk *)SDKFromCustomEventInfo:(NSDictionary *)info
 {
     NSString *SDKKey = info[@"sdk_key"];
-    if ( SDKKey.length > 0 )
-    {
-        return [ALSdk sharedWithKey: SDKKey];
-    }
-    else
-    {
-        return [ALSdk shared];
-    }
+    return ( SDKKey.length > 0 ) ? [ALSdk sharedWithKey: SDKKey] : [ALSdk shared];
 }
 
 @end
@@ -198,7 +186,8 @@ static NSString *const kALMoPubMediationErrorDomain = @"com.applovin.sdk.mediati
 
 - (void)postbackService:(ALPostbackService *)postbackService didFailToExecutePostback:(NSURL *)postbackURL errorCode:(NSInteger)errorCode
 {
-    [AppLovinNativeCustomEvent log: @"Native ad impression failed to execute."];
+    [AppLovinNativeCustomEvent log: @"Native ad impression failed to execute with error code: %ld and URL: %@", errorCode, postbackURL];
+    [AppLovinNativeCustomEvent log: [NSThread callStackSymbols].description]; // Print stack trace for easier debugging
 }
 
 // TODO: Implement mainMediaView for our video view
